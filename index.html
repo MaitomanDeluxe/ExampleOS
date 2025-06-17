@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Object Detection App</title>
+  <style>
+    body {
+      margin: 0;
+      background: #2c2c2c;
+      font-family: 'Courier New', Courier, monospace;
+      color: #e0e0e0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    header {
+      padding: 1rem;
+      font-size: 2rem;
+      font-weight: bold;
+    }
+    canvas, video {
+      border: 1px solid #888;
+      max-width: 100%;
+    }
+    #controls {
+      margin: 1rem;
+    }
+    button, input[type="file"] {
+      background: #444;
+      color: white;
+      border: none;
+      padding: 0.5rem 1rem;
+      margin: 0.5rem;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <header>Mathematical Object Detection</header>
+  <div id="controls">
+    <button onclick="startCamera()">Start Camera</button>
+    <input type="file" accept="image/*,video/*" onchange="handleFile(this.files[0])">
+    <button onclick="downloadVideo()">Download Video</button>
+  </div>
+  <video id="video" autoplay muted playsinline style="display:none;"></video>
+  <canvas id="canvas"></canvas>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.14.0/dist/tf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.2/dist/coco-ssd.min.js"></script>
+  <script>
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    let model, mediaStream;
+    let recordingFrames = [];
+
+    async function startCamera() {
+      mediaStream = await navigator.mediaDevices.getUserMedia({ video: true });
+      video.srcObject = mediaStream;
+      video.style.display = 'block';
+      detectFromVideo();
+    }
+
+    async function handleFile(file) {
+      const url = URL.createObjectURL(file);
+      if (file.type.startsWith('video')) {
+        video.src = url;
+        video.play();
+        detectFromVideo();
+      } else if (file.type.startsWith('image')) {
+        const img = new Image();
+        img.onload = async () => {
+          canvas.width = img.width;
+          canvas.height = img.height;
+          ctx.drawImage(img, 0, 0);
+          const predictions = await model.detect(img);
+          drawPredictions(predictions);
+        }
+        img.src = url;
+      }
+    }
+
+    async function detectFromVideo() {
+      model = model || await cocoSsd.load();
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const loop = async () => {
+        ctx.drawImage(video, 0, 0);
+        const predictions = await model.detect(video);
+        drawPredictions(predictions);
+        requestAnimationFrame(loop);
+      };
+      loop();
+    }
+
+    function drawPredictions(predictions) {
+      predictions.forEach(pred => {
+        ctx.strokeStyle = '#00ff00';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(...pred.bbox);
+        ctx.fillStyle = '#00ff00';
+        ctx.font = '14px monospace';
+        ctx.fillText(`${pred.class} (${Math.round(pred.score * 100)}%)`, pred.bbox[0], pred.bbox[1] - 5);
+      });
+    }
+
+    function downloadVideo() {
+      alert('動画録画・保存機能はこのサンプルでは未実装ですが、MediaRecorder APIで追加できます。');
+    }
+  </script>
+</body>
+</html>
