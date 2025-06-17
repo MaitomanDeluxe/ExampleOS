@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>物体検出アプリ</title>
+  <title>高速物体検出アプリ</title>
   <style>
     body {
       margin: 0;
@@ -41,19 +41,19 @@
   </style>
 </head>
 <body>
-  <header>数学的デザイン物体検出アプリ</header>
+  <header>高速物体検出アプリ</header>
   <div id="controls">
     <button onclick="startCamera()">カメラ開始</button>
     <input type="file" accept="image/*,video/*" onchange="handleFile(this.files[0])">
     <button onclick="exportAsImage()">結果をエクスポート</button><br>
     <label for="lineWidth">枠の太さ:</label>
-    <input id="lineWidth" type="range" min="1" max="10" value="2" onchange="updateLineWidth(this.value)">
+    <input id="lineWidth" type="range" min="1" max="10" value="2">
     <span id="lineWidthVal">2px</span>
   </div>
   <video id="video" autoplay muted playsinline style="display:none;"></video>
   <canvas id="canvas"></canvas>
 
-  <!-- モデル読み込み -->
+  <!-- TensorFlowとモデル -->
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.14.0/dist/tf.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.2/dist/coco-ssd.min.js"></script>
   <script>
@@ -65,12 +65,10 @@
 
     let model = null;
     let mediaStream = null;
-    let currentLineWidth = parseInt(lineWidthSlider.value);
 
-    // モデル読み込み完了後に表示
     async function loadModelAndStart() {
       try {
-        model = await cocoSsd.load();
+        model = await cocoSsd.load({ base: 'lite_mobilenet_v2' });
         document.body.style.display = 'flex';
       } catch (e) {
         alert('モデルの読み込みに失敗しました: ' + e.message);
@@ -127,8 +125,8 @@
       canvas.height = video.videoHeight;
 
       const loop = async () => {
+        ctx.drawImage(video, 0, 0);
         try {
-          ctx.drawImage(video, 0, 0);
           const predictions = await model.detect(video);
           drawPredictions(predictions);
         } catch (e) {
@@ -140,19 +138,26 @@
     }
 
     function drawPredictions(predictions) {
+      const lineWidth = parseInt(lineWidthSlider.value);
+      lineWidthVal.textContent = `${lineWidth}px`;
+
       predictions.forEach(pred => {
         ctx.strokeStyle = '#00ff00';
-        ctx.lineWidth = currentLineWidth;
+        ctx.lineWidth = lineWidth;
         ctx.strokeRect(...pred.bbox);
+
+        const label = `${translateLabel(pred.class)} (${Math.round(pred.score * 100)}%)`;
+        ctx.font = `bold ${14 + lineWidth}px monospace`;
         ctx.fillStyle = '#00ff00';
-        ctx.font = '16px monospace';
-        ctx.fillText(`${translateLabel(pred.class)} (${Math.round(pred.score * 100)}%)`,
-                     pred.bbox[0], pred.bbox[1] - 5);
+        ctx.strokeStyle = '#000';
+        ctx.lineWidth = 2;
+        ctx.strokeText(label, pred.bbox[0], pred.bbox[1] - 5);
+        ctx.fillText(label, pred.bbox[0], pred.bbox[1] - 5);
       });
     }
 
     function translateLabel(label) {
-      const dictionary = {
+      const dict = {
         'person': '人',
         'car': '車',
         'cat': '猫',
@@ -162,12 +167,7 @@
         'bottle': 'ボトル',
         'book': '本'
       };
-      return dictionary[label] || label;
-    }
-
-    function updateLineWidth(val) {
-      currentLineWidth = parseInt(val);
-      lineWidthVal.textContent = `${val}px`;
+      return dict[label] || label;
     }
 
     function exportAsImage() {
