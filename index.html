@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Object Detection App</title>
   <style>
     body {
@@ -10,7 +10,7 @@
       background: #2c2c2c;
       font-family: 'Courier New', Courier, monospace;
       color: #e0e0e0;
-      display: flex;
+      display: none; /* モデルロード後に表示 */
       flex-direction: column;
       align-items: center;
     }
@@ -45,6 +45,8 @@
   </div>
   <video id="video" autoplay muted playsinline style="display:none;"></video>
   <canvas id="canvas"></canvas>
+
+  <!-- TensorFlow.js & COCO-SSD -->
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.14.0/dist/tf.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.2/dist/coco-ssd.min.js"></script>
   <script>
@@ -52,42 +54,74 @@
     const canvas = document.getElementById('canvas');
     const ctx = canvas.getContext('2d');
     let model, mediaStream;
-    let recordingFrames = [];
+
+    async function loadModelAndStart() {
+      try {
+        model = await cocoSsd.load();
+        document.body.style.display = 'flex';
+      } catch (e) {
+        alert('モデルの読み込みに失敗しました: ' + e.message);
+      }
+    }
 
     async function startCamera() {
-      mediaStream = await navigator.mediaDevices.getUserMedia({ video: true });
-      video.srcObject = mediaStream;
-      video.style.display = 'block';
-      detectFromVideo();
+      try {
+        mediaStream = await navigator.mediaDevices.getUserMedia({ video: true });
+        video.srcObject = mediaStream;
+        video.style.display = 'block';
+        video.onloadedmetadata = () => {
+          video.play();
+          detectFromVideo();
+        };
+      } catch (e) {
+        alert('カメラの使用に失敗しました: ' + e.message);
+      }
     }
 
     async function handleFile(file) {
+      if (!file) return;
       const url = URL.createObjectURL(file);
+
       if (file.type.startsWith('video')) {
         video.src = url;
-        video.play();
-        detectFromVideo();
+        video.onloadedmetadata = () => {
+          video.play();
+          detectFromVideo();
+        };
       } else if (file.type.startsWith('image')) {
         const img = new Image();
         img.onload = async () => {
           canvas.width = img.width;
           canvas.height = img.height;
           ctx.drawImage(img, 0, 0);
-          const predictions = await model.detect(img);
-          drawPredictions(predictions);
-        }
+          try {
+            const predictions = await model.detect(img);
+            drawPredictions(predictions);
+          } catch (e) {
+            alert('画像からの検出に失敗しました: ' + e.message);
+          }
+        };
+        img.onerror = () => {
+          alert('画像の読み込みに失敗しました。');
+        };
         img.src = url;
+      } else {
+        alert('対応していないファイル形式です。');
       }
     }
 
     async function detectFromVideo() {
-      model = model || await cocoSsd.load();
+      if (!model) return;
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
       const loop = async () => {
-        ctx.drawImage(video, 0, 0);
-        const predictions = await model.detect(video);
-        drawPredictions(predictions);
+        try {
+          ctx.drawImage(video, 0, 0);
+          const predictions = await model.detect(video);
+          drawPredictions(predictions);
+        } catch (e) {
+          alert('動画からの検出中にエラー: ' + e.message);
+        }
         requestAnimationFrame(loop);
       };
       loop();
@@ -105,8 +139,10 @@
     }
 
     function downloadVideo() {
-      alert('動画録画・保存機能はこのサンプルでは未実装ですが、MediaRecorder APIで追加できます。');
+      alert('録画機能は未実装です（MediaRecorder APIで追加可能）。');
     }
+
+    loadModelAndStart();
   </script>
 </body>
 </html>
