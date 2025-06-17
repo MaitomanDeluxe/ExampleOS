@@ -1,13 +1,46 @@
-import sys, cv2, tensorflow as tf
-video_in = sys.argv[1]
-video_out = 'proc_'+video_in
-cap = cv2.VideoCapture(video_in)
-w,h = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)), int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-out = cv2.VideoWriter(video_out, cv2.VideoWriter_fourcc(*'mp4v'), cap.get(5), (w,h))
-# TensorFlowモデル読み込んでフレーム毎に検出・描画
-while cap.isOpened():
-  ret,frame = cap.read()
-  if not ret: break
-  # PB モデルで検出してbounding box描画...
-  out.write(frame)
-cap.release(); out.release()
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF‑8" /><meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>YouTube物体検出</title>
+  <style>
+    body { font-family: monospace; background:#222; color:#eee; padding:2rem; }
+    input[type=url], button { padding:0.5rem; margin:0.5rem; }
+    #loading { display:none; }
+  </style>
+</head>
+<body>
+  <h1>YouTube動画で物体検出</h1>
+  <input id="url" type="url" placeholder="YouTube動画URL" size="50">
+  <button onclick="start()">処理開始</button>
+
+  <div id="loading">
+    <p>動画を処理中…</p>
+    <div class="spinner"></div>
+  </div>
+
+  <div id="result"></div>
+
+  <script>
+    function start(){
+      const url = document.getElementById('url').value;
+      if(!url){ alert('URLを入力してください'); return; }
+      document.getElementById('loading').style.display='block';
+      fetch('/api/process',{
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({url})
+      }).then(r=>r.json())
+        .then(data=>{
+          document.getElementById('loading').style.display='none';
+          if(data.error) return alert(data.error);
+          const a = document.createElement('a');
+          a.href = data.downloadUrl;
+          a.textContent = '検出済み動画をダウンロード';
+          document.getElementById('result').innerHTML='';
+          document.getElementById('result').appendChild(a);
+        })
+        .catch(e=>{alert(e); document.getElementById('loading').style.display='none';});
+    }
+  </script>
+</body>
+</html>
