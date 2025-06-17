@@ -1,46 +1,125 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF‑8" /><meta name="viewport" content="width=device-width,initial-scale=1.0">
-  <title>YouTube物体検出</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>物体検出アプリ</title>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.15.0"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.2"></script>
   <style>
-    body { font-family: monospace; background:#222; color:#eee; padding:2rem; }
-    input[type=url], button { padding:0.5rem; margin:0.5rem; }
-    #loading { display:none; }
+    body {
+      margin: 0;
+      background: linear-gradient(120deg, #2e2e2e, #444);
+      font-family: 'Segoe UI', sans-serif;
+      color: white;
+      overflow-x: hidden;
+    }
+    .sidebar {
+      position: fixed;
+      top: 0; left: 0;
+      width: 280px;
+      height: 100%;
+      background: #1a1a1a;
+      border-right: 2px solid #333;
+      padding: 1rem;
+      box-sizing: border-box;
+      overflow-y: auto;
+    }
+    .content {
+      margin-left: 280px;
+      padding: 1rem;
+    }
+    label, input, select, button {
+      display: block;
+      margin-bottom: 1rem;
+    }
+    canvas {
+      max-width: 100%;
+      background: #222;
+    }
+    .spinner {
+      border: 6px solid #ccc;
+      border-top: 6px solid #00aaff;
+      border-radius: 50%;
+      width: 30px;
+      height: 30px;
+      animation: spin 1s linear infinite;
+      margin: 1rem auto;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
   </style>
 </head>
 <body>
-  <h1>YouTube動画で物体検出</h1>
-  <input id="url" type="url" placeholder="YouTube動画URL" size="50">
-  <button onclick="start()">処理開始</button>
-
-  <div id="loading">
-    <p>動画を処理中…</p>
-    <div class="spinner"></div>
+  <div class="sidebar">
+    <h2>設定</h2>
+    <label>枠の色 <input type="color" id="boxColor" value="#00ff00"></label>
+    <label>枠の太さ <input type="range" id="boxThickness" min="1" max="10" value="2"></label>
+    <label>文字太さ <input type="range" id="fontWeight" min="100" max="900" step="100" value="400"></label>
+    <label>画像/動画アップロード <input type="file" id="mediaInput" accept="image/*,video/*"></label>
+    <button onclick="exportCanvas()">結果をエクスポート（PNG）</button>
+  </div>
+  <div class="content">
+    <h1>物体検出アプリ</h1>
+    <div id="loading" class="spinner" style="display: none;"></div>
+    <canvas id="canvas"></canvas>
   </div>
 
-  <div id="result"></div>
-
   <script>
-    function start(){
-      const url = document.getElementById('url').value;
-      if(!url){ alert('URLを入力してください'); return; }
-      document.getElementById('loading').style.display='block';
-      fetch('/api/process',{
-        method:'POST', headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({url})
-      }).then(r=>r.json())
-        .then(data=>{
-          document.getElementById('loading').style.display='none';
-          if(data.error) return alert(data.error);
-          const a = document.createElement('a');
-          a.href = data.downloadUrl;
-          a.textContent = '検出済み動画をダウンロード';
-          document.getElementById('result').innerHTML='';
-          document.getElementById('result').appendChild(a);
-        })
-        .catch(e=>{alert(e); document.getElementById('loading').style.display='none';});
-    }
+    let model;
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+
+    const loadModel = async () => {
+      document.getElementById('loading').style.display = 'block';
+      model = await cocoSsd.load();
+      document.getElementById('loading').style.display = 'none';
+      alert('モデルの読み込みが完了しました');
+    };
+
+    const detectObjects = async (image) => {
+      canvas.width = image.width;
+      canvas.height = image.height;
+      ctx.drawImage(image, 0, 0);
+      const predictions = await model.detect(image);
+      const color = document.getElementById('boxColor').value;
+      const thickness = parseInt(document.getElementById('boxThickness').value);
+      const fontWeight = document.getElementById('fontWeight').value;
+      ctx.font = `${fontWeight} 16px sans-serif`;
+      ctx.lineWidth = thickness;
+      ctx.strokeStyle = color;
+      ctx.fillStyle = color;
+      predictions.forEach(pred => {
+        ctx.beginPath();
+        ctx.rect(...pred.bbox);
+        ctx.stroke();
+        ctx.fillText(`${pred.class} (${Math.round(pred.score * 100)}%)`, pred.bbox[0], pred.bbox[1] > 10 ? pred.bbox[1] - 5 : 10);
+      });
+    };
+
+    document.getElementById('mediaInput').addEventListener('change', async e => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      if (file.type.startsWith('image')) {
+        const img = new Image();
+        img.onload = () => detectObjects(img);
+        img.src = URL.createObjectURL(file);
+      } else if (file.type.startsWith('video')) {
+        alert('現在動画対応は準備中です');
+      }
+    });
+
+    const exportCanvas = () => {
+      const link = document.createElement('a');
+      link.download = 'detected.png';
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    };
+
+    loadModel();
   </script>
 </body>
 </html>
