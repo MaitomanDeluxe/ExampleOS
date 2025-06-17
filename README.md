@@ -1,25 +1,27 @@
-# Mathematical Object Detection Web App
+# 数学的オブジェクト検出ウェブアプリ
 
-A gray-themed, mathematical-style object detection app that runs on GitHub Pages. Supports real-time camera detection and image/video file input.
+GitHub Pages上で動作する、グレーをテーマにした数学的スタイルの物体検出アプリ。リアルタイムのカメラ検出と画像/動画ファイルの入力をサポートしています。
 
-## Features
+## 特徴
 
-- 🎥 Real-time object detection via webcam
-- 🖼️ Upload image or video for analysis
-- 📦 Powered by TensorFlow.js & COCO-SSD (YOLOv8-style)
-- 📐 Sleek, math-inspired UI with gray base
-- 💾 Ready for video recording support via MediaRecorder (not fully implemented yet)
+- 🎥 ウェブカメラによるリアルタイムの物体検出
+- 🖼️ 画像や動画をアップロードして解析
+- 📦 TensorFlow.js & COCO-SSD (YOLOv8スタイル)搭載。
+- グレーを基調とした、数学にインスパイアされた洗練されたUI
+- 💾 MediaRecorderによるビデオ録画に対応（まだ完全には実装されていない）
 
-## Getting Started
+## はじめに
 
-1. Clone or fork this repository.
-2. Deploy via GitHub Pages from `main` branch.
-3. Access the app in your browser.
+1. このリポジトリをクローンまたはフォークする。
+2. main`ブランチからGitHub Pages経由でデプロイする。
+3. ブラウザでアプリにアクセスする。
 
-## Local Development
+## ローカル開発
 
-Open `index.html` in any modern browser.
+モダンブラウザで `index.html` を開く。
 
-## License
+## ライセンス
 
 MIT
+
+DeepL.com（無料版）で翻訳しました。
