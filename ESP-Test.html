@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <title>ESP風ボックス編集</title>
+  <style>
+    body {
+      margin: 0;
+      background: #111;
+      color: white;
+      font-family: sans-serif;
+    }
+    #controls {
+      padding: 10px;
+      background: #222;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    #canvas-container {
+      position: relative;
+      overflow: hidden;
+    }
+    canvas {
+      display: block;
+    }
+    .box {
+      position: absolute;
+      border: 2px solid lime;
+      pointer-events: auto;
+      box-sizing: border-box;
+    }
+    .resizer {
+      width: 10px;
+      height: 10px;
+      background: lime;
+      position: absolute;
+      bottom: 0;
+      right: 0;
+      cursor: nwse-resize;
+    }
+  </style>
+</head>
+<body>
+  <div id="controls">
+    <input type="file" id="imageLoader" accept="image/*">
+    <button onclick="clearBoxes()">すべて削除</button>
+  </div>
+  <div id="canvas-container">
+    <canvas id="canvas"></canvas>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const imageLoader = document.getElementById('imageLoader');
+    const container = document.getElementById('canvas-container');
+
+    let image = new Image();
+    let boxes = [];
+
+    imageLoader.addEventListener('change', function(e) {
+      const reader = new FileReader();
+      reader.onload = function(event) {
+        image.onload = function() {
+          canvas.width = image.width;
+          canvas.height = image.height;
+          container.style.width = image.width + 'px';
+          container.style.height = image.height + 'px';
+          drawImage();
+        }
+        image.src = event.target.result;
+      }
+      reader.readAsDataURL(e.target.files[0]);
+    });
+
+    function drawImage() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(image, 0, 0);
+    }
+
+    // --- 追加部分：ESP風ボックスの描画・操作
+    let startX, startY, isDrawing = false;
+
+    canvas.addEventListener('mousedown', function(e) {
+      if (!image.src) return;
+      isDrawing = true;
+      const rect = canvas.getBoundingClientRect();
+      startX = e.clientX - rect.left;
+      startY = e.clientY - rect.top;
+
+      const box = document.createElement('div');
+      box.className = 'box';
+      box.style.left = startX + 'px';
+      box.style.top = startY + 'px';
+
+      const resizer = document.createElement('div');
+      resizer.className = 'resizer';
+      box.appendChild(resizer);
+
+      container.appendChild(box);
+      boxes.push(box);
+
+      function onMouseMove(e) {
+        const curX = e.clientX - rect.left;
+        const curY = e.clientY - rect.top;
+        box.style.width = Math.abs(curX - startX) + 'px';
+        box.style.height = Math.abs(curY - startY) + 'px';
+        box.style.left = Math.min(startX, curX) + 'px';
+        box.style.top = Math.min(startY, curY) + 'px';
+      }
+
+      function onMouseUp() {
+        isDrawing = false;
+        window.removeEventListener('mousemove', onMouseMove);
+        window.removeEventListener('mouseup', onMouseUp);
+        makeDraggable(box);
+      }
+
+      window.addEventListener('mousemove', onMouseMove);
+      window.addEventListener('mouseup', onMouseUp);
+    });
+
+    function makeDraggable(box) {
+      let offsetX, offsetY, isDragging = false;
+
+      box.addEventListener('mousedown', function(e) {
+        if (e.target.classList.contains('resizer')) return;
+        isDragging = true;
+        const rect = box.getBoundingClientRect();
+        offsetX = e.clientX - rect.left;
+        offsetY = e.clientY - rect.top;
+
+        function onMouseMove(e) {
+          box.style.left = (e.clientX - container.getBoundingClientRect().left - offsetX) + 'px';
+          box.style.top = (e.clientY - container.getBoundingClientRect().top - offsetY) + 'px';
+        }
+
+        function onMouseUp() {
+          isDragging = false;
+          window.removeEventListener('mousemove', onMouseMove);
+          window.removeEventListener('mouseup', onMouseUp);
+        }
+
+        window.addEventListener('mousemove', onMouseMove);
+        window.addEventListener('mouseup', onMouseUp);
+      });
+
+      const resizer = box.querySelector('.resizer');
+      resizer.addEventListener('mousedown', function(e) {
+        e.stopPropagation();
+        let startWidth = parseInt(window.getComputedStyle(box).width, 10);
+        let startHeight = parseInt(window.getComputedStyle(box).height, 10);
+        let startX = e.clientX;
+        let startY = e.clientY;
+
+        function onMouseMove(e) {
+          box.style.width = (startWidth + e.clientX - startX) + 'px';
+          box.style.height = (startHeight + e.clientY - startY) + 'px';
+        }
+
+        function onMouseUp() {
+          window.removeEventListener('mousemove', onMouseMove);
+          window.removeEventListener('mouseup', onMouseUp);
+        }
+
+        window.addEventListener('mousemove', onMouseMove);
+        window.addEventListener('mouseup', onMouseUp);
+      });
+    }
+
+    function clearBoxes() {
+      boxes.forEach(box => box.remove());
+      boxes = [];
+    }
+  </script>
+</body>
+</html>
