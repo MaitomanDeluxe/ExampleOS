@@ -71,6 +71,8 @@
     let model;
     const canvas = document.getElementById('canvas');
     const ctx = canvas.getContext('2d');
+    let lastImage = null;
+    let lastPredictions = [];
 
     const loadModel = async () => {
       document.getElementById('loading').style.display = 'block';
@@ -79,24 +81,33 @@
       alert('モデルの読み込みが完了しました');
     };
 
-    const detectObjects = async (image) => {
-      canvas.width = image.width;
-      canvas.height = image.height;
-      ctx.drawImage(image, 0, 0);
-      const predictions = await model.detect(image);
+    const renderDetections = () => {
+      if (!lastImage || lastPredictions.length === 0) return;
+      canvas.width = lastImage.width;
+      canvas.height = lastImage.height;
+      ctx.drawImage(lastImage, 0, 0);
       const color = document.getElementById('boxColor').value;
       const thickness = parseInt(document.getElementById('boxThickness').value);
       const fontWeight = document.getElementById('fontWeight').value;
-      ctx.font = `${fontWeight} 16px sans-serif`;
       ctx.lineWidth = thickness;
       ctx.strokeStyle = color;
       ctx.fillStyle = color;
-      predictions.forEach(pred => {
+      ctx.font = `${fontWeight} 16px sans-serif`;
+      lastPredictions.forEach(pred => {
         ctx.beginPath();
         ctx.rect(...pred.bbox);
         ctx.stroke();
         ctx.fillText(`${pred.class} (${Math.round(pred.score * 100)}%)`, pred.bbox[0], pred.bbox[1] > 10 ? pred.bbox[1] - 5 : 10);
       });
+    };
+
+    const detectObjects = async (image) => {
+      lastImage = image;
+      canvas.width = image.width;
+      canvas.height = image.height;
+      ctx.drawImage(image, 0, 0);
+      lastPredictions = await model.detect(image);
+      renderDetections();
     };
 
     document.getElementById('mediaInput').addEventListener('change', async e => {
@@ -111,6 +122,10 @@
         alert('現在動画対応は準備中です');
       }
     });
+
+    document.getElementById('boxThickness').addEventListener('input', renderDetections);
+    document.getElementById('fontWeight').addEventListener('input', renderDetections);
+    document.getElementById('boxColor').addEventListener('input', renderDetections);
 
     const exportCanvas = () => {
       const link = document.createElement('a');
