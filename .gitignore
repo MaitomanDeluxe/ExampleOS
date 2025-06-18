@@ -1,0 +1,7 @@
+### MAITO's OnlineCMDEmulator ###
+#Testing Output folder
+.output/
+#.appを無視
+*.app
+#test.htmlを無視
+test.html
