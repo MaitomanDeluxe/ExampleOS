@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <title>コマンドプロンプト風UI</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      background-color: black;
+      color: white;
+      font-family: monospace;
+      height: 100%;
+      overflow: hidden;
+    }
+    .window {
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      border: 1px solid #444;
+    }
+    .title-bar {
+      background-color: #e0e0e0;
+      color: black;
+      height: 25px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 4px;
+    }
+    .title-bar-left {
+      display: flex;
+      align-items: center;
+    }
+    .title-bar-controls {
+      font-size: 18px;
+      display: flex;
+      gap: 6px;
+      user-select: none;
+    }
+    .title-bar-controls span {
+      cursor: pointer;
+      padding: 0 5px;
+    }
+    .terminal {
+      flex-grow: 1;
+      padding: 10px;
+      overflow-y: auto;
+      background-color: black;
+      color: white;
+      white-space: pre-wrap;
+    }
+    .line {
+      display: flex;
+      flex-wrap: wrap;
+    }
+    .prompt {
+      user-select: none;
+    }
+    .input {
+      outline: none;
+      flex-grow: 1;
+    }
+    .input::after {
+      content: '█';
+      animation: blink 1s steps(1) infinite;
+    }
+    @keyframes blink {
+      50% { opacity: 0; }
+    }
+    .output {
+      white-space: pre-wrap;
+      margin-left: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="window">
+    <div class="title-bar">
+      <div class="title-bar-left">C:\\WINDOWS\\system32\\cmd.exe</div>
+      <div class="title-bar-controls">
+        <span>-</span><span>◻</span><span onclick="window.close()">×</span>
+      </div>
+    </div>
+    <div id="terminal" class="terminal"></div>
+  </div>
+
+  <script>
+    let ipAddress = "unknown";
+    const terminal = document.getElementById("terminal");
+    const fileSystem = { "C:\\Users\\": {} };
+    let currentDir = "C:\\Users\\";
+    const commandHistory = [];
+    let historyIndex = -1;
+
+    async function fetchIP() {
+      try {
+        const res = await fetch("https://api.ipify.org?format=json");
+        const data = await res.json();
+        ipAddress = data.ip;
+        currentDir += ipAddress + "\\";
+        fileSystem[currentDir] = {};
+      } catch {
+        ipAddress = "ip-error";
+      } finally {
+        showStartupMessage();
+        addNewLine();
+      }
+    }
+
+    function showStartupMessage() {
+      terminal.innerHTML +=
+        "Microsoft Windows [Version 10.0.19045.3448]\n" +
+        "(c) Microsoft Corporation. All rights reserved.\n\n";
+    }
+
+    function addNewLine() {
+      const line = document.createElement("div");
+      line.classList.add("line");
+
+      const prompt = document.createElement("span");
+      prompt.classList.add("prompt");
+      prompt.textContent = `${currentDir}> `;
+
+      const input = document.createElement("span");
+      input.classList.add("input");
+      input.contentEditable = true;
+
+      input.addEventListener("keydown", function (e) {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          const command = input.textContent.trim();
+          input.contentEditable = false;
+          if (command) {
+            commandHistory.push(command);
+            historyIndex = commandHistory.length;
+          }
+          executeCommand(command);
+        } else if (e.key === "ArrowUp") {
+          if (historyIndex > 0) {
+            historyIndex--;
+            input.textContent = commandHistory[historyIndex];
+            e.preventDefault();
+          }
+        } else if (e.key === "ArrowDown") {
+          if (historyIndex < commandHistory.length - 1) {
+            historyIndex++;
+            input.textContent = commandHistory[historyIndex];
+            e.preventDefault();
+          }
+        }
+      });
+
+      line.appendChild(prompt);
+      line.appendChild(input);
+      terminal.appendChild(line);
+      input.focus();
+      terminal.scrollTop = terminal.scrollHeight;
+    }
+
+    function executeCommand(command) {
+      const output = document.createElement("div");
+      output.classList.add("output");
+
+      const args = command.trim().split(/\s+/);
+      const cmd = args[0]?.toLowerCase() || "";
+      const param = args.slice(1);
+
+      switch (cmd) {
+        case "help":
+          output.textContent =
+            `使用可能なコマンド:\nhelp, dir, cd, mkdir, tree, sfc, chkdsk, start, color, python, cls, exit`;
+          break;
+        case "dir":
+          const contents = Object.keys(fileSystem[currentDir] || {});
+          output.textContent = contents.length ? contents.join("\n") : "ファイルが見つかりません";
+          break;
+        case "cd":
+          if (!param[0]) {
+            output.textContent = "cd: 使用方法: cd [パス]";
+          } else if (param[0] === "..") {
+            const segments = currentDir.split("\\").filter(Boolean);
+            segments.pop();
+            currentDir = segments.length ? segments.join("\\") + "\\" : "C:\\";
+          } else {
+            const path = resolvePath(param[0]);
+            if (fileSystem[path]) currentDir = path;
+            else output.textContent = "指定されたパスが見つかりません";
+          }
+          break;
+        case "mkdir":
+          if (!param[0]) {
+            output.textContent = "mkdir: 使用方法: mkdir [名前]";
+          } else {
+            const dirName = param[0];
+            const fullPath = currentDir + dirName + "\\";
+            fileSystem[fullPath] = {};
+            output.textContent = `ディレクトリを作成しました: ${dirName}`;
+          }
+          break;
+        case "tree":
+          output.textContent = Object.keys(fileSystem).join("\n");
+          break;
+        case "sfc":
+          output.textContent = "システムスキャンを開始...\n整合性に問題は見つかりませんでした。";
+          break;
+        case "chkdsk":
+          output.textContent = `ボリュームのチェック中...\nCHKDSKは正常に完了しました。`;
+          break;
+        case "start":
+          if (param[0] === "notepad") {
+            window.open("notepad.html", "_blank");
+            output.textContent = "メモ帳を起動しました。";
+          } else {
+            output.textContent = param.length
+              ? `プログラム「${param.join(" ")}」を開始します...`
+              : "start: プログラム名が必要です";
+          }
+          break;
+        case "color":
+          if (param[0]) {
+            document.querySelector(".terminal").style.color = `#${param[0]}`;
+            output.textContent = `テキストカラーを変更しました (#${param[0]})`;
+          } else {
+            output.textContent = "color: 使用方法: color [カラーコード]";
+          }
+          break;
+        case "python":
+          if (param[0] === "ocr.py") {
+            window.open("ocr.html", "_blank");
+            output.textContent = "OCRスクリプトを実行中（ocr.html）...";
+          } else {
+            output.textContent = "python: 実行ファイルが指定されていないか、サポートされていません。";
+          }
+          break;
+        case "cls":
+          terminal.innerHTML = "";
+          return addNewLine();
+        case "exit":
+          output.textContent = "終了します...";
+          setTimeout(() => window.close(), 1000);
+          break;
+        case "":
+          break;
+        default:
+          output.textContent = `'${cmd}' は内部コマンドまたは外部コマンドとして認識されていません。`;
+      }
+
+      if (output.textContent) terminal.appendChild(output);
+      addNewLine();
+    }
+
+    function resolvePath(name) {
+      return currentDir + name + "\\";
+    }
+
+    fetchIP();
+  </script>
+</body>
+</html>
