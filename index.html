@@ -73,6 +73,10 @@
     const ctx = canvas.getContext('2d');
     let lastImage = null;
     let lastPredictions = [];
+    let gamingMode = false;
+    let rainbowIndex = 0;
+
+    const rainbowColors = ['#ff0000','#ff7f00','#ffff00','#00ff00','#0000ff','#4b0082','#8f00ff'];
 
     const loadModel = async () => {
       document.getElementById('loading').style.display = 'block';
@@ -86,20 +90,29 @@
       canvas.width = lastImage.width;
       canvas.height = lastImage.height;
       ctx.drawImage(lastImage, 0, 0);
-      const color = document.getElementById('boxColor').value;
+      const baseColor = document.getElementById('boxColor').value;
       const thickness = parseInt(document.getElementById('boxThickness').value);
       const fontWeight = document.getElementById('fontWeight').value;
       ctx.lineWidth = thickness;
-      ctx.strokeStyle = color;
-      ctx.fillStyle = color;
       ctx.font = `${fontWeight} 16px sans-serif`;
-      lastPredictions.forEach(pred => {
+
+      lastPredictions.forEach((pred, i) => {
+        const color = gamingMode ? rainbowColors[(rainbowIndex + i) % rainbowColors.length] : baseColor;
+        ctx.strokeStyle = color;
+        ctx.fillStyle = color;
         ctx.beginPath();
         ctx.rect(...pred.bbox);
         ctx.stroke();
         ctx.fillText(`${pred.class} (${Math.round(pred.score * 100)}%)`, pred.bbox[0], pred.bbox[1] > 10 ? pred.bbox[1] - 5 : 10);
       });
     };
+
+    setInterval(() => {
+      if (gamingMode) {
+        rainbowIndex = (rainbowIndex + 1) % rainbowColors.length;
+        renderDetections();
+      }
+    }, 200);
 
     const detectObjects = async (image) => {
       lastImage = image;
@@ -133,6 +146,19 @@
       link.href = canvas.toDataURL('image/png');
       link.click();
     };
+
+    // KONAMI コマンド検出
+    const konamiCode = ['ArrowUp','ArrowUp','ArrowDown','ArrowDown','ArrowLeft','ArrowRight','ArrowLeft','ArrowRight','b','a'];
+    let inputBuffer = [];
+    window.addEventListener('keydown', (e) => {
+      inputBuffer.push(e.key);
+      if (inputBuffer.length > konamiCode.length) inputBuffer.shift();
+      if (JSON.stringify(inputBuffer) === JSON.stringify(konamiCode)) {
+        gamingMode = !gamingMode;
+        alert(`ゲーミングモード ${gamingMode ? 'ON' : 'OFF'} (lol)`);
+        renderDetections();
+      }
+    });
 
     loadModel();
   </script>
