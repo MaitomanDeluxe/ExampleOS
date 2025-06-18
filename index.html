@@ -13,6 +13,7 @@
       font-family: 'Segoe UI', sans-serif;
       color: white;
       overflow-x: hidden;
+      transition: all 0.5s;
     }
     .sidebar {
       position: fixed;
@@ -24,14 +25,17 @@
       padding: 1rem;
       box-sizing: border-box;
       overflow-y: auto;
+      transition: all 0.5s;
     }
     .content {
       margin-left: 280px;
       padding: 1rem;
+      transition: all 0.5s;
     }
     label, input, select, button {
       display: block;
       margin-bottom: 1rem;
+      transition: all 0.5s;
     }
     canvas {
       max-width: 100%;
@@ -50,19 +54,32 @@
       0% { transform: rotate(0deg); }
       100% { transform: rotate(360deg); }
     }
+    .rainbow {
+      animation: rainbow-bg 5s linear infinite;
+    }
+    @keyframes rainbow-bg {
+      0% { background-color: #ff0000; color: #fff; }
+      14% { background-color: #ff7f00; color: #000; }
+      28% { background-color: #ffff00; color: #000; }
+      42% { background-color: #00ff00; color: #000; }
+      57% { background-color: #0000ff; color: #fff; }
+      71% { background-color: #4b0082; color: #fff; }
+      85% { background-color: #8f00ff; color: #fff; }
+      100% { background-color: #ff0000; color: #fff; }
+    }
   </style>
 </head>
 <body>
-  <div class="sidebar">
+  <div class="sidebar" id="sidebar">
     <h2>設定</h2>
-    <label>枠の色 <input type="color" id="boxColor" value="#00ff00"></label>
-    <label>枠の太さ <input type="range" id="boxThickness" min="1" max="10" value="2"></label>
-    <label>文字太さ <input type="range" id="fontWeight" min="100" max="900" step="100" value="400"></label>
-    <label>画像/動画アップロード <input type="file" id="mediaInput" accept="image/*,video/*"></label>
+    <label id="labelBoxColor">枠の色 <input type="color" id="boxColor" value="#00ff00"></label>
+    <label id="labelBoxThickness">枠の太さ <input type="range" id="boxThickness" min="1" max="10" value="2"></label>
+    <label id="labelFontWeight">文字太さ <input type="range" id="fontWeight" min="100" max="900" step="100" value="400"></label>
+    <label id="labelMediaInput">画像/動画アップロード <input type="file" id="mediaInput" accept="image/*,video/*"></label>
     <button onclick="exportCanvas()">結果をエクスポート（PNG）</button>
   </div>
-  <div class="content">
-    <h1>物体検出アプリ</h1>
+  <div class="content" id="content">
+    <h1 id="title">物体検出アプリ</h1>
     <div id="loading" class="spinner" style="display: none;"></div>
     <canvas id="canvas"></canvas>
   </div>
@@ -110,7 +127,18 @@
     setInterval(() => {
       if (gamingMode) {
         rainbowIndex = (rainbowIndex + 1) % rainbowColors.length;
+        document.body.classList.add('rainbow');
+        document.getElementById('sidebar').classList.add('rainbow');
+        document.getElementById('content').classList.add('rainbow');
+        document.getElementById('title').classList.add('rainbow');
+        ['labelBoxColor','labelBoxThickness','labelFontWeight','labelMediaInput'].forEach(id => document.getElementById(id).classList.add('rainbow'));
         renderDetections();
+      } else {
+        document.body.classList.remove('rainbow');
+        document.getElementById('sidebar').classList.remove('rainbow');
+        document.getElementById('content').classList.remove('rainbow');
+        document.getElementById('title').classList.remove('rainbow');
+        ['labelBoxColor','labelBoxThickness','labelFontWeight','labelMediaInput'].forEach(id => document.getElementById(id).classList.remove('rainbow'));
       }
     }, 200);
 
