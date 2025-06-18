@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>無題 - メモ帳</title>
+  <link rel="icon" href="notepad.jpeg" type="image/jpeg">
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      font-family: "Meiryo", sans-serif;
+      background-color: white;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    .title-bar {
+      background-color: #f0f0f0;
+      height: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 6px;
+      border-bottom: 1px solid #ccc;
+    }
+
+    .title-left {
+      display: flex;
+      align-items: center;
+    }
+
+    .title-left img {
+      width: 16px;
+      height: 16px;
+      margin-right: 6px;
+    }
+
+    .menu-bar {
+      background-color: white;
+      color: black;
+      height: 25px;
+      display: flex;
+      align-items: center;
+      padding-left: 6px;
+      border-bottom: 1px solid #ccc;
+      font-size: 13px;
+    }
+
+    .menu-bar span {
+      margin-right: 15px;
+      cursor: default;
+    }
+
+    textarea {
+      width: 100%;
+      height: calc(100% - 55px); /* 30(title) + 25(menu) */
+      border: none;
+      resize: none;
+      padding: 6px;
+      font-size: 14px;
+      font-family: "MS Gothic", monospace;
+      box-sizing: border-box;
+      outline: none;
+      background-color: white;
+      color: black;
+    }
+  </style>
+</head>
+<body>
+  <div class="title-bar">
+    <div class="title-left">
+      <img src="notepad.png" alt="Notepad Icon">
+      <span id="window-title">無題 - メモ帳</span>
+    </div>
+  </div>
+  <div class="menu-bar">
+    <span>ファイル(F)</span>
+    <span>編集(E)</span>
+    <span>書式(O)</span>
+    <span>表示(V)</span>
+    <span>ヘルプ(H)</span>
+  </div>
+  <textarea id="notepad"></textarea>
+
+  <script>
+    const textarea = document.getElementById("notepad");
+    const title = document.getElementById("window-title");
+    let changed = false;
+
+    textarea.addEventListener("input", () => {
+      if (!changed) {
+        title.textContent = "*" + title.textContent;
+        changed = true;
+      }
+    });
+  </script>
+</body>
+</html>
+
