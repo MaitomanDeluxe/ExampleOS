@@ -117,48 +117,39 @@
     }
 
     function addNewLine() {
-      const line = document.createElement("div");
-      line.classList.add("line");
+  const line = document.createElement("div");
+  line.classList.add("line");
 
-      const prompt = document.createElement("span");
-      prompt.classList.add("prompt");
-      prompt.textContent = `${currentDir}> `;
+  const prompt = document.createElement("span");
+  prompt.classList.add("prompt");
+  prompt.textContent = `${currentDir}> `;
 
-      const input = document.createElement("span");
-      input.classList.add("input");
-      input.contentEditable = true;
+  const input = document.createElement("span");
+  input.classList.add("input");
+  input.contentEditable = true;
 
-      input.addEventListener("keydown", function (e) {
-        if (e.key === "Enter") {
-          e.preventDefault();
-          const command = input.textContent.trim();
-          input.contentEditable = false;
-          if (command) {
-            commandHistory.push(command);
-            historyIndex = commandHistory.length;
-          }
-          executeCommand(command);
-        } else if (e.key === "ArrowUp") {
-          if (historyIndex > 0) {
-            historyIndex--;
-            input.textContent = commandHistory[historyIndex];
-            e.preventDefault();
-          }
-        } else if (e.key === "ArrowDown") {
-          if (historyIndex < commandHistory.length - 1) {
-            historyIndex++;
-            input.textContent = commandHistory[historyIndex];
-            e.preventDefault();
-          }
-        }
-      });
+  // iOSやSafari対策
+  input.setAttribute("autocapitalize", "off");
+  input.setAttribute("autocomplete", "off");
+  input.setAttribute("autocorrect", "off");
+  input.setAttribute("spellcheck", "false");
 
-      line.appendChild(prompt);
-      line.appendChild(input);
-      terminal.appendChild(line);
-      input.focus();
-      terminal.scrollTop = terminal.scrollHeight;
+  input.addEventListener("keydown", function (e) {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      const command = input.textContent.trim();
+      input.contentEditable = false;
+      input.classList.remove("input"); // カーソルを消すため
+      executeCommand(command);
     }
+  });
+
+  line.appendChild(prompt);
+  line.appendChild(input);
+  terminal.appendChild(line);
+  input.focus();
+  terminal.scrollTop = terminal.scrollHeight;
+}
 
     function executeCommand(command) {
       const output = document.createElement("div");
