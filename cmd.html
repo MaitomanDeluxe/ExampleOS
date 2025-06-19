@@ -41,10 +41,20 @@
   <div class="terminal" id="terminal"></div>
   <script>
     const terminal = document.getElementById("terminal");
-    let currentDir = "C:\\";
+    let currentDir = "C:\\Users\\IP";
     let fileSystem = {
       "C:\\": { type: "dir", children: { "Users\\": { type: "dir", children: {} } } }
     };
+
+    fetch('https://api.ipify.org?format=json')
+      .then(res => res.json())
+      .then(data => {
+        currentDir = `C:\\Users\\${data.ip}`;
+        // 再表示するプロンプトをすべて更新（新たなプロンプト追加以降に反映）
+        document.querySelectorAll('.prompt').forEach(p => {
+          p.textContent = `${currentDir}> `;
+        });
+      });
 
     function addLine(text, className = "") {
       const line = document.createElement("div");
@@ -85,7 +95,7 @@
     }
 
     function resolvePath(path) {
-      return currentDir + path + (path.endsWith("\\") ? "" : "\\");
+      return currentDir + "\\" + path.replace(/\\/g, "\\\\") + (path.endsWith("\\") ? "" : "\\");
     }
 
     function runCommand(input) {
@@ -147,8 +157,10 @@
           break;
 
         case "exit":
-          out.textContent = "終了します...";
-          break;
+          out.textContent = "終了しています...";
+          terminal.appendChild(out);
+          setTimeout(() => window.close(), 500);
+          return;
 
         case "type": {
           const name = args[0];
