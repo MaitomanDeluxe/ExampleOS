@@ -8,7 +8,7 @@
       margin: 0;
       padding: 0;
       background-color: #012456;
-      color: #00bfff;
+      color: #ffffff;
       font-family: Consolas, monospace;
       height: 100%;
       overflow: hidden;
@@ -28,6 +28,7 @@
 
     .prompt {
       user-select: none;
+      color: #ffffff;
     }
 
     .input {
@@ -44,6 +45,7 @@
     .output {
       white-space: pre-wrap;
       margin-left: 10px;
+      color: #ffffff;
     }
   </style>
 </head>
@@ -51,7 +53,7 @@
   <div class="terminal" id="terminal"></div>
   <script>
     const terminal = document.getElementById("terminal");
-    let currentDir = "C:\\Users\\PowerUser>";
+    let currentDir = "PS C:\\Users\\PowerUser>";
 
     const validCommands = [
       "get-help",
