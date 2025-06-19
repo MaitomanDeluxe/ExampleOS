@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <title>Ubuntu Terminal Emulator</title>
+  <style>
+    body {
+      margin: 0;
+      background-color: #300a24;
+      color: white;
+      font-family: monospace;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    #terminal {
+      padding: 10px;
+      height: 100%;
+      overflow-y: auto;
+      white-space: pre-wrap;
+    }
+
+    .line {
+      display: flex;
+      flex-wrap: wrap;
+    }
+
+    .prompt {
+      color: lightgreen;
+      user-select: none;
+    }
+
+    .input {
+      flex-grow: 1;
+      outline: none;
+      caret-color: white;
+      color: #ffff66;
+    }
+
+    .input.invalid {
+      color: #ff4444 !important;
+    }
+
+    .output {
+      white-space: pre-wrap;
+      color: white;
+      margin-left: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div id="terminal"></div>
+  <script>
+    const terminal = document.getElementById("terminal");
+
+    let currentDir = "~";
+    let commands = ["ls", "cd", "pwd", "echo", "clear", "exit"];
+    let tabState = { prefix: "", matches: [], index: 0 };
+
+    function addLine(text, className = "") {
+      const div = document.createElement("div");
+      div.textContent = text;
+      if (className) div.classList.add(className);
+      terminal.appendChild(div);
+    }
+
+    function addPrompt() {
+      const line = document.createElement("div");
+      line.className = "line";
+
+      const prompt = document.createElement("span");
+      prompt.className = "prompt";
+      prompt.textContent = `user@ubuntu:${currentDir}$ `;
+
+      const input = document.createElement("span");
+      input.className = "input";
+      input.contentEditable = true;
+      input.spellcheck = false;
+
+      input.addEventListener("input", () => {
+        const text = input.textContent.trim();
+        input.classList.toggle("invalid", text && !commands.some(cmd => cmd.startsWith(text)));
+        tabState = { prefix: text, matches: commands.filter(c => c.startsWith(text)), index: 0 };
+      });
+
+      input.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          const cmd = input.textContent.trim();
+          input.contentEditable = false;
+          runCommand(cmd);
+        } else if (e.key === "Tab") {
+          e.preventDefault();
+          if (tabState.matches.length > 0) {
+            input.textContent = tabState.matches[tabState.index];
+            placeCaretAtEnd(input);
+            tabState.index = (tabState.index + 1) % tabState.matches.length;
+          }
+        }
+      });
+
+      line.appendChild(prompt);
+      line.appendChild(input);
+      terminal.appendChild(line);
+      input.focus();
+      terminal.scrollTop = terminal.scrollHeight;
+    }
+
+    function placeCaretAtEnd(el) {
+      const range = document.createRange();
+      const sel = window.getSelection();
+      range.selectNodeContents(el);
+      range.collapse(false);
+      sel.removeAllRanges();
+      sel.addRange(range);
+    }
+
+    function runCommand(cmdLine) {
+      const args = cmdLine.split(/\s+/);
+      const cmd = args.shift();
+      const output = document.createElement("div");
+      output.className = "output";
+
+      switch (cmd) {
+        case "pwd":
+          output.textContent = `/home/user/${currentDir.replace(/^~\/?/, '')}`;
+          break;
+        case "cd":
+          const target = args[0] || "~";
+          currentDir = target === "~" ? "~" : target;
+          break;
+        case "ls":
+          output.textContent = "file.txt  script.sh  folder/";
+          break;
+        case "echo":
+          output.textContent = args.join(" ");
+          break;
+        case "clear":
+          terminal.innerHTML = "";
+          addPrompt();
+          return;
+        case "exit":
+          output.textContent = "ログアウト中...";
+          terminal.appendChild(output);
+          setTimeout(() => window.close(), 500);
+          return;
+        case "":
+          break;
+        default:
+          output.textContent = `${cmd}: command not found`;
+      }
+
+      if (output.textContent) terminal.appendChild(output);
+      addPrompt();
+    }
+
+    addLine("Ubuntu 22.04.3 LTS \\n \\l\n");
+    addPrompt();
+  </script>
+</body>
+</html>
