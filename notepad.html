@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <title>無題 - メモ帳</title>
-  <link rel="icon" href="notepad.jpeg" type="image/jpeg">
+  <link rel="icon" href="notepad.png" type="image/png">
   <style>
     html, body {
       margin: 0;
@@ -19,7 +19,6 @@
       height: 30px;
       display: flex;
       align-items: center;
-      justify-content: space-between;
       padding: 0 6px;
       border-bottom: 1px solid #ccc;
     }
@@ -44,16 +43,42 @@
       padding-left: 6px;
       border-bottom: 1px solid #ccc;
       font-size: 13px;
+      position: relative;
     }
 
-    .menu-bar span {
+    .menu {
+      position: relative;
       margin-right: 15px;
       cursor: default;
     }
 
+    .menu:hover .dropdown {
+      display: block;
+    }
+
+    .dropdown {
+      display: none;
+      position: absolute;
+      top: 25px;
+      left: 0;
+      background-color: white;
+      border: 1px solid #ccc;
+      min-width: 150px;
+      z-index: 100;
+    }
+
+    .dropdown div {
+      padding: 5px 10px;
+      cursor: pointer;
+    }
+
+    .dropdown div:hover {
+      background-color: #e0e0e0;
+    }
+
     textarea {
       width: 100%;
-      height: calc(100% - 55px); /* 30(title) + 25(menu) */
+      height: calc(100% - 55px);
       border: none;
       resize: none;
       padding: 6px;
@@ -73,14 +98,40 @@
       <span id="window-title">無題 - メモ帳</span>
     </div>
   </div>
+
   <div class="menu-bar">
-    <span>ファイル(F)</span>
-    <span>編集(E)</span>
-    <span>書式(O)</span>
-    <span>表示(V)</span>
-    <span>ヘルプ(H)</span>
+    <div class="menu">ファイル(F)
+      <div class="dropdown">
+        <div onclick="newFile()">新規作成</div>
+        <div onclick="saveFile()">名前を付けて保存</div>
+      </div>
+    </div>
+    <div class="menu">編集(E)
+      <div class="dropdown">
+        <div onclick="undo()">元に戻す</div>
+        <div onclick="redo()">やり直し</div>
+        <div onclick="selectAll()">すべて選択</div>
+      </div>
+    </div>
+    <div class="menu">書式(O)
+      <div class="dropdown">
+        <div onclick="toggleWrap()">自動折り返し</div>
+        <div onclick="changeFontSize()">フォントサイズ変更</div>
+      </div>
+    </div>
+    <div class="menu">表示(V)
+      <div class="dropdown">
+        <div onclick="alert('ステータスバー（仮）')">ステータスバー</div>
+      </div>
+    </div>
+    <div class="menu">ヘルプ(H)
+      <div class="dropdown">
+        <div onclick="alert('これはWeb版のメモ帳です。\n作成者: あなた')">バージョン情報</div>
+      </div>
+    </div>
   </div>
-  <textarea id="notepad"></textarea>
+
+  <textarea id="notepad" autocapitalize="off" autocomplete="off" autocorrect="off" spellcheck="false"></textarea>
 
   <script>
     const textarea = document.getElementById("notepad");
@@ -93,7 +144,46 @@
         changed = true;
       }
     });
+
+    function newFile() {
+      if (changed && !confirm("変更内容を破棄して新規作成しますか？")) return;
+      textarea.value = "";
+      title.textContent = "無題 - メモ帳";
+      changed = false;
+    }
+
+    function saveFile() {
+      const blob = new Blob([textarea.value], { type: "text/plain" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "メモ.txt";
+      a.click();
+      URL.revokeObjectURL(url);
+      title.textContent = "メモ.txt - メモ帳";
+      changed = false;
+    }
+
+    function undo() {
+      document.execCommand("undo");
+    }
+
+    function redo() {
+      document.execCommand("redo");
+    }
+
+    function selectAll() {
+      textarea.select();
+    }
+
+    function toggleWrap() {
+      textarea.style.whiteSpace = textarea.style.whiteSpace === "pre" ? "pre-wrap" : "pre";
+    }
+
+    function changeFontSize() {
+      const size = prompt("フォントサイズを入力（例: 12）", "14");
+      if (size) textarea.style.fontSize = `${size}px`;
+    }
   </script>
 </body>
 </html>
-
