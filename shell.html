@@ -56,28 +56,30 @@
     let currentDir = "PS C:\\Users\\PowerUser>";
 
     const validCommands = [
-      "get-help", "get-childitem", "ls", "clear-host", "cls", "get-process", "exit",
-      "get-command", "get-member", "set-location", "new-item", "copy-item", "move-item",
-      "remove-item", "get-content", "set-content", "add-content", "stop-process",
-      "start-process", "get-service", "start-service", "stop-service", "restart-service",
-      "set-service", "test-connection", "get-netipaddress", "get-netadapter",
-      "get-winevent", "clear-winevent", "get-itemproperty", "set-itemproperty",
-      "new-itemproperty", "remove-itemproperty", "get-variable", "set-variable",
-      "remove-variable", "select-object", "where-object", "sort-object", "format-table",
-      "format-list", "export-csv", "import-csv", "out-gridview", "invoke-command",
-      "get-date", "measure-command", "write-host", "write-output", "read-host",
-      "get-aduser", "new-aduser", "set-aduser", "get-adgroup", "add-adgroupmember",
-      "remove-adgroupmember"
+      "get-help", "get-command", "get-member", "get-childitem", "ls", "clear-host", "cls", "get-process", "exit",
+      "set-location", "new-item", "copy-item", "move-item", "remove-item", "get-content", "set-content", "add-content",
+      "stop-process", "start-process", "get-service", "start-service", "stop-service", "restart-service",
+      "set-service", "test-connection", "get-netipaddress", "get-netadapter", "get-winevent", "clear-winevent",
+      "get-itemproperty", "set-itemproperty", "new-itemproperty", "remove-itemproperty", "get-variable",
+      "set-variable", "remove-variable", "select-object", "where-object", "sort-object", "format-table",
+      "format-list", "export-csv", "import-csv", "out-gridview", "invoke-command", "get-date", "measure-command",
+      "write-host", "write-output", "read-host", "get-aduser", "new-aduser", "set-aduser", "get-adgroup",
+      "add-adgroupmember", "remove-adgroupmember"
     ];
+
+    function capitalizeCmd(cmd) {
+      const match = validCommands.find(c => c.toLowerCase() === cmd.toLowerCase());
+      return match ? match.split('-').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join('-') : cmd;
+    }
 
     function isValidPrefix(text) {
       const lower = text.toLowerCase();
       return validCommands.some(cmd => cmd.startsWith(lower));
     }
 
-    function matchCommand(input) {
-      const lower = input.toLowerCase();
-      return validCommands.find(cmd => cmd.startsWith(lower)) || lower;
+    function getMatchingCommands(prefix) {
+      const lower = prefix.toLowerCase();
+      return validCommands.filter(cmd => cmd.startsWith(lower));
     }
 
     function addLine(text, className = "") {
@@ -86,6 +88,8 @@
       if (className) line.classList.add(className);
       terminal.appendChild(line);
     }
+
+    let tabState = { prefix: '', matches: [], index: 0 };
 
     function addPrompt() {
       const line = document.createElement("div");
@@ -103,12 +107,13 @@
       input.autocorrect = "off";
 
       input.addEventListener("input", () => {
-        const text = input.textContent.trim().toLowerCase();
+        const text = input.textContent.trim();
         if (text && !isValidPrefix(text)) {
           input.classList.add("invalid");
         } else {
           input.classList.remove("invalid");
         }
+        tabState = { prefix: text, matches: getMatchingCommands(text), index: 0 };
       });
 
       input.addEventListener("keydown", function(e) {
@@ -119,11 +124,11 @@
           executeCommand(command);
         } else if (e.key === "Tab") {
           e.preventDefault();
-          const current = input.textContent.trim();
-          const match = validCommands.find(cmd => cmd.startsWith(current.toLowerCase()));
-          if (match) {
-            input.textContent = match;
+          if (tabState.matches.length > 0) {
+            const suggestion = tabState.matches[tabState.index];
+            input.textContent = capitalizeCmd(suggestion);
             placeCaretAtEnd(input);
+            tabState.index = (tabState.index + 1) % tabState.matches.length;
           }
         }
       });
@@ -144,8 +149,13 @@
       sel.addRange(range);
     }
 
+    function matchCommand(input) {
+      const lower = input.toLowerCase();
+      return validCommands.find(cmd => cmd.toLowerCase() === lower) || lower;
+    }
+
     function executeCommand(input) {
-      const command = matchCommand(input.trim());
+      const command = matchCommand(input.trim().toLowerCase());
       const output = document.createElement("div");
       output.className = "output";
 
