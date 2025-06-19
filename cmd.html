@@ -49,7 +49,7 @@
     fetch('https://api.ipify.org?format=json')
       .then(res => res.json())
       .then(data => {
-        currentDir = `C:\\Users\\${data.ip}`;
+        currentDir = `C:\\${data.ip}`;
         // 再表示するプロンプトをすべて更新（新たなプロンプト追加以降に反映）
         document.querySelectorAll('.prompt').forEach(p => {
           p.textContent = `${currentDir}> `;
