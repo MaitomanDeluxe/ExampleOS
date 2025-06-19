@@ -1,64 +1,74 @@
-# Cmd.exe風ブラウザアプリ
+# 仮想ターミナルエミュレータ (HTML Only)
 
-Windowsのコマンドプロンプト風UIを再現した、HTMLベースのシングルページアプリです。仮想ファイルシステムやコマンド入力、簡易アプリ（Notepad, OCRモジュール）をブラウザ上で体験できます。
+このプロジェクトは、**コマンドプロンプト (cmd.exe)**、**PowerShell**, および **Linux (Ubuntu) ターミナル** の機能をHTMLとJavaScriptのみで再現したものです。ブラウザ上で動作し、OS不要・インストール不要で使用できます。
 
-## 🔧 主な機能
+## 🔧 構成ファイル一覧
 
-- `dir`, `cd`, `mkdir`, `tree`, `color`, `sfc`, `chkdsk` などのコマンドを再現
-- 簡易ファイルシステム（仮想）
-- `start notepad` でメモ帳を起動
-- `python ocr.py` でOCRモジュールを起動（ダミー）
-- `cls`, `exit` コマンド対応
-- IPアドレスを仮想ユーザーパスに反映（例：C:\Users\xxx.xxx.xxx.xxx\）
-
-## 📁 構成ファイル
-
-| ファイル名       | 説明                        |
-|------------------|-----------------------------|
-| `main.html`      | メインアプリ本体            |
-| `notepad.html`   | 簡易メモ帳                  |
-| `ocr.html`       | OCRダミー画面               |
-| `README.md`      | このファイル                |
+| ファイル名       | 説明                           |
+|------------------|--------------------------------|
+| `index.html`     | ターミナル選択画面             |
+| `cmd.html`       | コマンドプロンプトのエミュレータ |
+| `shell.html`     | PowerShellのエミュレータ        |
+| `linux.html`     | Ubuntu風Linuxターミナル         |
 
 ## 🚀 使用方法
 
 ### 1. 起動方法
 
-1. このリポジトリをダウンロードまたはクローンします。
-2. `main.html` をブラウザで開くだけで起動します。
+1. `index.html` をブラウザで開く。
+2. 表示されるボタンから、起動したいターミナル（CMD / PowerShell / Linux）を選択。
 
-### 2. 利用可能なコマンド
-
-| コマンド | 説明 |
-|---------|------|
-| `help`  | 使用可能なコマンド一覧を表示 |
-| `dir`   | 現在のディレクトリの内容表示 |
-| `cd [パス]` | ディレクトリを移動（`..` で戻る） |
-| `mkdir [名前]` | 新しいフォルダ作成 |
-| `tree` | 全体のフォルダ構造を表示 |
-| `color [hex]` | テキスト色を変更（例: `color ff0000`） |
-| `sfc` | システムファイルチェック（風） |
-| `chkdsk` | ディスクチェック（風） |
-| `start notepad` | メモ帳（notepad.html）を開く |
-| `python ocr.py` | OCRモジュール（ocr.html）を開く |
-| `cls` | 画面をクリア |
-| `exit` | ウィンドウを閉じる（※一部ブラウザで無効） |
-
-## 💡 補足
-
-- 本アプリはローカルHTMLのみで動作します。サーバー不要。
-- OCR機能は仮のもので、実際の文字認識は行いません。
-- `main.html`, `notepad.html`, `ocr.html` を同一ディレクトリに配置してください。
-
-## 📷 スクリーンショット
-
-![cmd-ui](https://user-images.githubusercontent.com/your-username/cmd-ui.png)  
-※必要に応じて追加
-
-## 📝 ライセンス
-
-このプロジェクトはMITライセンスのもとで提供されます。
+### 2. 各ターミナルの機能
 
 ---
 
-制作：あなたの名前  
+### 🖥 Cmd.exe (`cmd.html`)
+
+- サポートコマンド: `help`, `cd`, `dir`, `mkdir`, `rmdir`, `echo`, `cls`, `exit`, `type`
+- 仮想ファイルシステム対応（`C:\Users\...` 構造）
+- ユーザー名部分はローカルIPアドレスに自動置換
+- `exit` でタブを閉じる（window.close）
+
+---
+
+### ⚡ PowerShell (`shell.html`)
+
+- 実装コマンド：
+  - `Get-Help`, `Get-Command`, `Get-Member`
+  - `Get-ChildItem`, `Set-Location`, `Clear-Host`, `Get-Process`, `Exit`
+  - `Get/Set/Add/Remove-Content`, `Start/Stop-Service`, `Get-Service`, etc.
+- 入力補完（Tabキー）：
+  - 入力途中例：`Ge` → `Get-Help` → `Get-Command` → `Get-Member`（ループ補完）
+  - 自動で正しい大文字形式に変換（例：`get-help` → `Get-Help`）
+- 入力中のコマンドが有効でない場合は赤く表示
+- IPアドレスがプロンプト（`PS C:\Users\<IP>>`）に表示
+
+---
+
+### 🐧 Linuxターミナル (`linux.html`)
+
+- 実装コマンド：`ls`, `pwd`, `cd`, `echo`, `clear`, `exit`
+- 入力履歴ナビゲーション：↑ ↓
+- 入力補完（Tabキー）：例 `l` → `ls`
+- 入力エラー時に赤色で警告
+- ユーザー名・ホスト名としてIPアドレスを使用（例：`127.0.0.1@ubuntu:~$`）
+
+---
+
+## 🌐 特記事項
+
+- すべてのターミナルはJavaScriptのみで動作しており、サーバーやNode.js不要。
+- `window.close()` によるタブ閉鎖は、一部ブラウザで制限されることがあります（ユーザー操作による起動でのみ許可される）。
+- IPアドレス取得には `https://api.ipify.org` を使用しています（外部通信あり）。
+
+---
+
+## 📁 ローカルでの使用方法
+
+1. このプロジェクトをローカルにダウンロードまたはクローン。
+2. `index.html` をダブルクリックまたはブラウザで開く。
+
+```bash
+git clone https://github.com/your-name/virtual-terminal
+cd virtual-terminal
+start index.html
