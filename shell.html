@@ -56,17 +56,23 @@
     let currentDir = "PS C:\\Users\\PowerUser>";
 
     const validCommands = [
-      "get-help",
-      "get-childitem",
-      "ls",
-      "clear-host",
-      "cls",
-      "get-process",
-      "exit"
+      "get-help", "get-childitem", "ls", "clear-host", "cls", "get-process", "exit",
+      "get-command", "get-member", "set-location", "new-item", "copy-item", "move-item",
+      "remove-item", "get-content", "set-content", "add-content", "stop-process",
+      "start-process", "get-service", "start-service", "stop-service", "restart-service",
+      "set-service", "test-connection", "get-netipaddress", "get-netadapter",
+      "get-winevent", "clear-winevent", "get-itemproperty", "set-itemproperty",
+      "new-itemproperty", "remove-itemproperty", "get-variable", "set-variable",
+      "remove-variable", "select-object", "where-object", "sort-object", "format-table",
+      "format-list", "export-csv", "import-csv", "out-gridview", "invoke-command",
+      "get-date", "measure-command", "write-host", "write-output", "read-host",
+      "get-aduser", "new-aduser", "set-aduser", "get-adgroup", "add-adgroupmember",
+      "remove-adgroupmember"
     ];
 
     function isValidPrefix(text) {
-      return validCommands.some(cmd => cmd.startsWith(text));
+      const lower = text.toLowerCase();
+      return validCommands.some(cmd => cmd.startsWith(lower));
     }
 
     function matchCommand(input) {
@@ -111,6 +117,14 @@
           const command = input.textContent.trim();
           input.contentEditable = false;
           executeCommand(command);
+        } else if (e.key === "Tab") {
+          e.preventDefault();
+          const current = input.textContent.trim();
+          const match = validCommands.find(cmd => cmd.startsWith(current.toLowerCase()));
+          if (match) {
+            input.textContent = match;
+            placeCaretAtEnd(input);
+          }
         }
       });
 
@@ -119,6 +133,15 @@
       terminal.appendChild(line);
       input.focus();
       terminal.scrollTop = terminal.scrollHeight;
+    }
+
+    function placeCaretAtEnd(el) {
+      const range = document.createRange();
+      const sel = window.getSelection();
+      range.selectNodeContents(el);
+      range.collapse(false);
+      sel.removeAllRanges();
+      sel.addRange(range);
     }
 
     function executeCommand(input) {
@@ -134,6 +157,12 @@
       switch (command) {
         case "get-help":
           output.textContent = `基本コマンド例:\nGet-ChildItem\nSet-Location\nClear-Host\nGet-Process\nExit`;
+          break;
+        case "get-command":
+          output.textContent = validCommands.sort().join("\n");
+          break;
+        case "get-member":
+          output.textContent = "Name     MemberType     Definition\n----     ----------     ----------\nLength   Property       int Length { get; }\nClone    Method         Object Clone()";
           break;
         case "get-childitem":
         case "ls":
