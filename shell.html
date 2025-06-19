@@ -188,7 +188,9 @@
           break;
         case "exit":
           output.textContent = "PowerShell を終了しています...";
-          break;
+          terminal.appendChild(output);
+          setTimeout(() => window.close(), 500);
+          return;
         default:
           output.textContent = `${input} : このコマンドレットは認識されません。Get-Help を使用してヘルプを取得してください。`;
       }
