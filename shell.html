@@ -63,6 +63,15 @@
       "exit"
     ];
 
+    function isValidPrefix(text) {
+      return validCommands.some(cmd => cmd.startsWith(text));
+    }
+
+    function matchCommand(input) {
+      const lower = input.toLowerCase();
+      return validCommands.find(cmd => cmd.startsWith(lower)) || lower;
+    }
+
     function addLine(text, className = "") {
       const line = document.createElement("div");
       line.textContent = text;
@@ -87,7 +96,7 @@
 
       input.addEventListener("input", () => {
         const text = input.textContent.trim().toLowerCase();
-        if (text && !validCommands.some(cmd => cmd.startsWith(text))) {
+        if (text && !isValidPrefix(text)) {
           input.classList.add("invalid");
         } else {
           input.classList.remove("invalid");
@@ -110,15 +119,17 @@
       terminal.scrollTop = terminal.scrollHeight;
     }
 
-    function executeCommand(command) {
+    function executeCommand(input) {
+      const command = matchCommand(input.trim());
       const output = document.createElement("div");
       output.className = "output";
+
       if (command === "") {
         addPrompt();
         return;
       }
 
-      switch (command.toLowerCase()) {
+      switch (command) {
         case "get-help":
           output.textContent = `基本コマンド例:\nGet-ChildItem\nSet-Location\nClear-Host\nGet-Process\nExit`;
           break;
@@ -138,8 +149,9 @@
           output.textContent = "PowerShell を終了しています...";
           break;
         default:
-          output.textContent = `${command} : このコマンドレットは認識されません。Get-Help を使用してヘルプを取得してください。`;
+          output.textContent = `${input} : このコマンドレットは認識されません。Get-Help を使用してヘルプを取得してください。`;
       }
+
       terminal.appendChild(output);
       addPrompt();
     }
