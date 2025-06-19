@@ -53,6 +53,17 @@
   <div class="terminal" id="terminal"></div>
   <script>
     const terminal = document.getElementById("terminal");
+    let ipAddress = "127.0.0.1";
+    fetch('https://api.ipify.org?format=json')
+      .then(res => res.json())
+      .then(data => {
+        ipAddress = data.ip;
+        if (currentDir.includes("PowerUser")) {
+          currentDir = `PS C:\\Users\\${ipAddress}>`;
+          document.querySelectorAll('.prompt').forEach(p => p.textContent = `${currentDir} `);
+        }
+      });
+
     let currentDir = "PS C:\\Users\\PowerUser>";
 
     const validCommands = [
