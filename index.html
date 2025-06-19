@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>ターミナル選択</title>
+  <style>
+    body {
+      margin: 0;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: linear-gradient(135deg, #1e1e1e, #333);
+      font-family: "Segoe UI", sans-serif;
+    }
+
+    .container {
+      text-align: center;
+    }
+
+    h1 {
+      color: #fff;
+      margin-bottom: 40px;
+      font-size: 24px;
+    }
+
+    button {
+      display: block;
+      width: 200px;
+      margin: 15px auto;
+      padding: 15px;
+      font-size: 16px;
+      font-weight: bold;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: 0.3s;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+    }
+
+    .cmd-button {
+      background-color: #000;
+      color: #0f0;
+    }
+
+    .cmd-button:hover {
+      background-color: #111;
+    }
+
+    .powershell-button {
+      background-color: #012456;
+      color: #00bfff;
+    }
+
+    .powershell-button:hover {
+      background-color: #023072;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>ターミナルを選択してください</h1>
+    <button class="cmd-button" onclick="location.href='cmd.html'">コマンドプロンプト</button>
+    <button class="powershell-button" onclick="location.href='shell.html'">PowerShell</button>
+  </div>
+</body>
+</html>
