@@ -1,1 +1,127 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>Windows PowerShell</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      background-color: #012456;
+      color: #00bfff;
+      font-family: Consolas, monospace;
+      height: 100%;
+      overflow: hidden;
+    }
 
+    .terminal {
+      padding: 10px;
+      overflow-y: auto;
+      height: 100%;
+      white-space: pre-wrap;
+    }
+
+    .line {
+      display: flex;
+      flex-wrap: wrap;
+    }
+
+    .prompt {
+      user-select: none;
+    }
+
+    .input {
+      outline: none;
+      flex-grow: 1;
+      caret-color: #00bfff;
+    }
+
+    .output {
+      white-space: pre-wrap;
+      margin-left: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="terminal" id="terminal"></div>
+  <script>
+    const terminal = document.getElementById("terminal");
+    let currentDir = "C:\\Users\\PowerUser>";
+
+    function addLine(text, className = "") {
+      const line = document.createElement("div");
+      line.textContent = text;
+      if (className) line.classList.add(className);
+      terminal.appendChild(line);
+    }
+
+    function addPrompt() {
+      const line = document.createElement("div");
+      line.className = "line";
+
+      const prompt = document.createElement("span");
+      prompt.className = "prompt";
+      prompt.textContent = `${currentDir} `;
+
+      const input = document.createElement("span");
+      input.className = "input";
+      input.contentEditable = true;
+      input.spellcheck = false;
+      input.autocapitalize = "off";
+      input.autocorrect = "off";
+
+      input.addEventListener("keydown", function(e) {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          const command = input.textContent.trim();
+          input.contentEditable = false;
+          executeCommand(command);
+        }
+      });
+
+      line.appendChild(prompt);
+      line.appendChild(input);
+      terminal.appendChild(line);
+      input.focus();
+      terminal.scrollTop = terminal.scrollHeight;
+    }
+
+    function executeCommand(command) {
+      const output = document.createElement("div");
+      output.className = "output";
+      if (command === "") {
+        addPrompt();
+        return;
+      }
+
+      switch (command.toLowerCase()) {
+        case "get-help":
+          output.textContent = `基本コマンド例:\nGet-ChildItem\nSet-Location\nClear-Host\nGet-Process\nExit`;
+          break;
+        case "get-childitem":
+        case "ls":
+          output.textContent = "Mode                LastWriteTime         Length Name\n----                -------------         ------ ----\n-a----        2024/01/01    12:00            1234 file1.txt\n-a----        2024/02/01    13:30            4321 file2.log";
+          break;
+        case "clear-host":
+        case "cls":
+          terminal.innerHTML = "";
+          addPrompt();
+          return;
+        case "get-process":
+          output.textContent = "Handles  NPM(K)    PM(K)      WS(K)     CPU(s)     Id  ProcessName\n-------  ------    -----      -----     ------     --  -----------\n   1234      40     10000      20000     123.45   4321  powershell";
+          break;
+        case "exit":
+          output.textContent = "PowerShell を終了しています...";
+          break;
+        default:
+          output.textContent = `${command} : このコマンドレットは認識されません。Get-Help を使用してヘルプを取得してください。`;
+      }
+      terminal.appendChild(output);
+      addPrompt();
+    }
+
+    addLine("Windows PowerShell\nCopyright (C) Microsoft Corporation. All rights reserved.\n");
+    addPrompt();
+  </script>
+</body>
+</html>
