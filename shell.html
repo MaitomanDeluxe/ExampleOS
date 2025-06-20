@@ -84,4 +84,162 @@
 </head>
 <body>
   <div class="taskbar">
-    <div class="title">Wi
+    <div class="title">Windows PowerShell</div>
+    <div class="window-controls">
+      <span title="最小化">━</span>
+      <span title="最大化">◻</span>
+      <span title="閉じる" onclick="window.close()">✕</span>
+    </div>
+  </div>
+
+  <div class="terminal" id="terminal"></div>
+  <script>
+    const terminal = document.getElementById("terminal");
+    let currentDir = "PS C:\\Users\\User>";
+    let ipAddress = "127.0.0.1";
+
+    fetch('https://api.ipify.org?format=json')
+      .then(res => res.json())
+      .then(data => {
+        ipAddress = data.ip;
+        currentDir = `PS C:\\Users\\${ipAddress}>`;
+        document.querySelectorAll('.prompt').forEach(p => p.textContent = `${currentDir} `);
+      });
+
+    const validCommands = [
+      "get-help", "get-command", "get-member", "get-process", "cls", "clear-host", "exit"
+    ];
+
+    function capitalizeCmd(cmd) {
+      const match = validCommands.find(c => c.toLowerCase() === cmd.toLowerCase());
+      return match ? match.split('-').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join('-') : cmd;
+    }
+
+    function isValidPrefix(text) {
+      const lower = text.toLowerCase();
+      return validCommands.some(cmd => cmd.startsWith(lower));
+    }
+
+    function getMatchingCommands(prefix) {
+      const lower = prefix.toLowerCase();
+      return validCommands.filter(cmd => cmd.startsWith(lower));
+    }
+
+    let tabState = { prefix: '', matches: [], index: 0 };
+
+    function addLine(text, className = "") {
+      const line = document.createElement("div");
+      line.textContent = text;
+      if (className) line.classList.add(className);
+      terminal.appendChild(line);
+    }
+
+    function addPrompt() {
+      const line = document.createElement("div");
+      line.className = "line";
+
+      const prompt = document.createElement("span");
+      prompt.className = "prompt";
+      prompt.textContent = `${currentDir} `;
+
+      const input = document.createElement("span");
+      input.className = "input";
+      input.contentEditable = true;
+      input.spellcheck = false;
+      input.autocapitalize = "off";
+      input.autocorrect = "off";
+
+      input.addEventListener("input", () => {
+        const text = input.textContent.trim();
+        if (text && !isValidPrefix(text)) {
+          input.classList.add("invalid");
+        } else {
+          input.classList.remove("invalid");
+        }
+        tabState = { prefix: text, matches: getMatchingCommands(text), index: 0 };
+      });
+
+      input.addEventListener("keydown", function(e) {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          const command = input.textContent.trim();
+          input.contentEditable = false;
+          executeCommand(command);
+        } else if (e.key === "Tab") {
+          e.preventDefault();
+          if (tabState.matches.length > 0) {
+            const suggestion = tabState.matches[tabState.index];
+            input.textContent = capitalizeCmd(suggestion);
+            placeCaretAtEnd(input);
+            tabState.index = (tabState.index + 1) % tabState.matches.length;
+          }
+        }
+      });
+
+      line.appendChild(prompt);
+      line.appendChild(input);
+      terminal.appendChild(line);
+      input.focus();
+      terminal.scrollTop = terminal.scrollHeight;
+    }
+
+    function placeCaretAtEnd(el) {
+      const range = document.createRange();
+      const sel = window.getSelection();
+      range.selectNodeContents(el);
+      range.collapse(false);
+      sel.removeAllRanges();
+      sel.addRange(range);
+    }
+
+    function matchCommand(input) {
+      const lower = input.toLowerCase();
+      return validCommands.find(cmd => cmd.toLowerCase() === lower) || lower;
+    }
+
+    function executeCommand(input) {
+      const command = matchCommand(input.trim().toLowerCase());
+      const output = document.createElement("div");
+      output.className = "output";
+
+      if (command === "") {
+        addPrompt();
+        return;
+      }
+
+      switch (command) {
+        case "get-help":
+          output.textContent = "使用できるコマンド: Get-Command, Get-Process, Exit, Cls";
+          break;
+        case "get-command":
+          output.textContent = validCommands.sort().join("\n");
+          break;
+        case "get-member":
+          output.textContent = "Name     MemberType     Definition\n----     ----------     ----------\nLength   Property       int Length { get; }\nClone    Method         Object Clone()";
+          break;
+        case "get-process":
+          output.textContent = "Id  Name        CPU    Memory\n--  ----        ---    ------\n1234 powershell 12.3s   45MB\n5678 chrome     22.7s   130MB";
+          break;
+        case "clear-host":
+        case "cls":
+          terminal.innerHTML = "";
+          addPrompt();
+          return;
+        case "exit":
+          output.textContent = "PowerShell を終了しています...";
+          terminal.appendChild(output);
+          setTimeout(() => window.close(), 500);
+          return;
+        default:
+          output.textContent = `${input} : このコマンドレットは認識されません。Get-Help を使用してヘルプを取得してください。`;
+      }
+
+      terminal.appendChild(output);
+      addPrompt();
+    }
+
+    addLine("Windows PowerShell\nCopyright (C) Microsoft Corporation. All rights reserved.\n");
+    addPrompt();
+  </script>
+</body>
+</html>
