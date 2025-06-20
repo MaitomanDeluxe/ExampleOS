@@ -2,14 +2,13 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
-  <title>ExampleOS</title>
+  <title>ExampleOS ロック画面</title>
   <style>
     html, body {
       margin: 0;
       overflow: hidden;
       background: black;
       user-select: none;
-      -webkit-user-select: none;
       touch-action: none;
     }
     canvas {
@@ -27,9 +26,9 @@ const ctx = canvas.getContext('2d');
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
-let stage = 'lock'; // lock → login → desktop
+let stage = 'lock'; // lock → login
 const bg = new Image();
-bg.src = 'OS.jpeg'; // ファイル名を「OS.jpeg」に変更
+bg.src = 'OS.jpeg';
 
 let timeStr = '';
 function updateTime() {
@@ -39,64 +38,14 @@ function updateTime() {
 setInterval(updateTime, 1000);
 updateTime();
 
-const windows = [
-  { title: 'Cmd.exe', x: 50, y: 100, w: 400, h: 300, color: '#000', text: 'C:\\Users\\>' },
-  { title: 'PowerShell', x: 480, y: 100, w: 400, h: 300, color: '#012456', text: 'PS C:\\Users\\>' },
-  { title: 'Linux Terminal', x: 50, y: 420, w: 400, h: 300, color: '#002b36', text: '$ ' },
-  { title: 'Mac Terminal', x: 480, y: 420, w: 400, h: 300, color: '#2e2e2e', text: '% ' },
-];
-
-let dragging = null, offsetX = 0, offsetY = 0;
-
-canvas.addEventListener('mousedown', e => {
-  const mx = e.offsetX, my = e.offsetY;
-  windows.forEach(win => {
-    if (mx > win.x && mx < win.x + win.w && my > win.y && my < win.y + 30) {
-      dragging = win;
-      offsetX = mx - win.x;
-      offsetY = my - win.y;
-    }
-  });
-});
-
-canvas.addEventListener('mouseup', () => dragging = null);
-
-canvas.addEventListener('mousemove', e => {
-  if (dragging) {
-    dragging.x = e.offsetX - offsetX;
-    dragging.y = e.offsetY - offsetY;
-    draw();
-  }
-});
-
 canvas.addEventListener('click', () => {
   if (stage === 'lock') {
     stage = 'login';
     draw();
   } else if (stage === 'login') {
-    stage = 'loading';
-    draw();
-    setTimeout(() => {
-      stage = 'desktop';
-      draw();
-    }, 4000);
+    location.href = 'ExampleOS.html'; // ログイン後にページ遷移
   }
 });
-
-function drawWindow(win) {
-  ctx.fillStyle = '#ccc';
-  ctx.fillRect(win.x, win.y, win.w, 30);
-  ctx.fillStyle = win.color;
-  ctx.fillRect(win.x, win.y + 30, win.w, win.h - 30);
-
-  ctx.fillStyle = '#000';
-  ctx.font = 'bold 14px sans-serif';
-  ctx.fillText(win.title, win.x + 10, win.y + 20);
-
-  ctx.fillStyle = '#0f0';
-  ctx.font = '14px monospace';
-  ctx.fillText(win.text, win.x + 10, win.y + 50);
-}
 
 function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -112,21 +61,6 @@ function draw() {
     ctx.fillStyle = '#fff';
     ctx.font = '30px sans-serif';
     ctx.fillText('サインイン ▶', canvas.width / 2 - 80, canvas.height / 2);
-  } else if (stage === 'loading') {
-    ctx.fillStyle = '#111';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = '#fff';
-    ctx.font = '20px sans-serif';
-    ctx.fillText('お待ちください...', canvas.width / 2 - 80, canvas.height / 2);
-    ctx.beginPath();
-    ctx.arc(canvas.width / 2, canvas.height / 2 + 40, 20, 0, Math.PI * 1.5);
-    ctx.strokeStyle = '#fff';
-    ctx.lineWidth = 3;
-    ctx.stroke();
-  } else if (stage === 'desktop') {
-    ctx.fillStyle = '#1e1e1e';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    windows.forEach(drawWindow);
   }
 }
 bg.onload = draw;
