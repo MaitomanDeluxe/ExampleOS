@@ -6,7 +6,6 @@
   <style>
     body {
       margin: 0;
-      padding: 0;
       background-color: #1e1e1e;
       font-family: monospace;
       overflow: hidden;
@@ -17,7 +16,7 @@
       height: 400px;
       background: #000;
       border: 1px solid #666;
-      box-shadow: 0 0 10px rgba(0, 0, 0, 0.7);
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.6);
       display: flex;
       flex-direction: column;
       resize: both;
@@ -26,29 +25,28 @@
     .title-bar {
       height: 30px;
       background: #ccc;
-      color: #000;
       display: flex;
-      align-items: center;
       justify-content: space-between;
+      align-items: center;
       padding: 0 10px;
       cursor: move;
       font-weight: bold;
+      user-select: none;
     }
     .title-bar.ps    { background-color: #012456; color: #00bfff; }
-    .title-bar.mac   { background-color: #444;     color: #fff;     }
-    .title-bar.linux { background-color: #222;     color: #0f0;     }
+    .title-bar.mac   { background-color: #444; color: #fff; }
+    .title-bar.linux { background-color: #222; color: #0f0; }
 
     .controls span {
-      margin-left: 8px;
+      margin-left: 10px;
       cursor: pointer;
     }
-    .terminal {
-      flex: 1;
-      background: #000;
-      color: #fff;
-      padding: 10px;
-      overflow-y: auto;
-      white-space: pre-wrap;
+
+    iframe {
+      border: none;
+      width: 100%;
+      height: 100%;
+      flex-grow: 1;
     }
   </style>
 </head>
@@ -56,254 +54,31 @@
   <!-- Cmd -->
   <div class="window" style="top: 20px; left: 20px;">
     <div class="title-bar">Cmd.exe <span class="controls"><span onclick="this.closest('.window').remove()">×</span></span></div>
-    <iframe srcdoc="<!DOCTYPE html>
-<html lang="ja">
-<head>
-  <meta charset="UTF-8" />
-  <title>Cmd.exe Emulator</title>
-  <style>
-    html, body {
-      margin: 0;
-      padding: 0;
-      background: black;
-      color: white;
-      font-family: Consolas, monospace;
-      height: 100%;
-      overflow: hidden;
-    }
-
-    .taskbar {
-      background-color: white;
-      color: black;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 4px 8px;
-      height: 30px;
-      box-sizing: border-box;
-      font-family: "Segoe UI", sans-serif;
-    }
-
-    .title {
-      font-size: 14px;
-      font-weight: bold;
-    }
-
-    .window-controls {
-      display: flex;
-      gap: 10px;
-      font-size: 16px;
-      user-select: none;
-    }
-
-    .window-controls span {
-      cursor: default;
-    }
-
-    .window-controls span:hover {
-      background-color: #ccc;
-      padding: 0 4px;
-    }
-
-    .terminal {
-      padding: 10px;
-      overflow-y: auto;
-      height: calc(100% - 30px);
-      white-space: pre-wrap;
-    }
-
-    .line {
-      display: flex;
-      flex-wrap: wrap;
-    }
-
-    .prompt {
-      user-select: none;
-    }
-
-    .input {
-      outline: none;
-      flex-grow: 1;
-      caret-color: white;
-      color: white;
-    }
-
-    .output {
-      white-space: pre-wrap;
-      margin-left: 10px;
-    }
-  </style>
-</head>
-<body>
-  <div class="taskbar">
-    <div class="title">C:\Windows\System32\cmd.exe</div>
-    <div class="window-controls">
-      <span title="最小化">━</span>
-      <span title="最大化">◻</span>
-      <span title="閉じる" onclick="window.close()">✕</span>
-    </div>
-  </div>
-
-  <div class="terminal" id="terminal"></div>
-
-  <script>
-    const terminal = document.getElementById("terminal");
-    let currentDir = "C:\\";
-    let fileSystem = {
-      "C:\\": { type: "dir", children: { "Users\\": { type: "dir", children: {} } } }
-    };
-
-    function addLine(text, className = "") {
-      const line = document.createElement("div");
-      line.textContent = text;
-      if (className) line.classList.add(className);
-      terminal.appendChild(line);
-    }
-
-    function addNewPrompt() {
-      const line = document.createElement("div");
-      line.className = "line";
-
-      const prompt = document.createElement("span");
-      prompt.className = "prompt";
-      prompt.textContent = `${currentDir}> `;
-
-      const input = document.createElement("span");
-      input.className = "input";
-      input.contentEditable = true;
-      input.spellcheck = false;
-      input.autocapitalize = "off";
-      input.autocorrect = "off";
-
-      input.addEventListener("keydown", (e) => {
-        if (e.key === "Enter") {
-          e.preventDefault();
-          const cmd = input.textContent.trim();
-          input.contentEditable = false;
-          runCommand(cmd);
-        }
-      });
-
-      line.appendChild(prompt);
-      line.appendChild(input);
-      terminal.appendChild(line);
-      input.focus();
-      terminal.scrollTop = terminal.scrollHeight;
-    }
-
-    function resolvePath(path) {
-      return currentDir + path + (path.endsWith("\\") ? "" : "\\");
-    }
-
-    function runCommand(input) {
-      const args = input.split(/\s+/);
-      const cmd = args.shift().toLowerCase();
-
-      const out = document.createElement("div");
-      out.className = "output";
-
-      switch (cmd) {
-        case "help":
-          out.textContent = `help, dir, cd, mkdir, rmdir, copy, move, del, ren, type, echo, cls, exit`;
-          break;
-
-        case "dir": {
-          const dir = fileSystem[currentDir];
-          out.textContent = Object.keys(dir.children).join("\n") || "ファイルが見つかりません";
-          break;
-        }
-
-        case "cd": {
-          const path = args[0];
-          const target = resolvePath(path);
-          if (fileSystem[target] && fileSystem[target].type === "dir") {
-            currentDir = target;
-          } else {
-            out.textContent = "指定されたパスが見つかりません";
-          }
-          break;
-        }
-
-        case "mkdir": {
-          const name = args[0];
-          const newPath = resolvePath(name);
-          fileSystem[newPath] = { type: "dir", children: {} };
-          fileSystem[currentDir].children[name + "\\"] = fileSystem[newPath];
-          out.textContent = `ディレクトリを作成しました: ${name}`;
-          break;
-        }
-
-        case "rmdir": {
-          const name = args[0];
-          const target = resolvePath(name);
-          if (fileSystem[target]) {
-            delete fileSystem[target];
-            delete fileSystem[currentDir].children[name + "\\"];
-            out.textContent = `${name} を削除しました。`;
-          } else out.textContent = `ディレクトリが見つかりません: ${name}`;
-          break;
-        }
-
-        case "cls":
-          terminal.innerHTML = "";
-          addNewPrompt();
-          return;
-
-        case "echo":
-          out.textContent = args.join(" ");
-          break;
-
-        case "exit":
-          out.textContent = "終了します...";
-          break;
-
-        case "type": {
-          const name = args[0];
-          const path = resolvePath(name);
-          if (fileSystem[path] && fileSystem[path].type === "file") {
-            out.textContent = fileSystem[path].content;
-          } else {
-            out.textContent = `ファイルが見つかりません: ${name}`;
-          }
-          break;
-        }
-
-        default:
-          out.textContent = `'${cmd}' は内部コマンドまたは外部コマンドとして認識されていません。`;
-      }
-
-      terminal.appendChild(out);
-      addNewPrompt();
-    }
-
-    addLine("Microsoft Windows [Version 10.0.19045.3448]");
-    addLine("(c) Microsoft Corporation. All rights reserved.\n");
-    addNewPrompt();
-  </script>
-</body>
-</html></iframe>
+    <iframe src="cmd.html"></iframe>
   </div>
 
   <!-- PowerShell -->
-  <div class="window" style="top: 60px; left: 640px;">
+  <div class="window" style="top: 40px; left: 650px;">
     <div class="title-bar ps">PowerShell <span class="controls"><span onclick="this.closest('.window').remove()">×</span></span></div>
-    <iframe srcdoc="<!DOCTYPE html><html><body style='margin:0;background:#012456;color:#00bfff;font-family:Consolas;'>ps c:\\users\\user&gt;_</body></html>" style="border: none; width: 100%; height: 100%;"></iframe>
+    <iframe src="shell.html"></iframe>
   </div>
 
   <!-- Linux -->
   <div class="window" style="top: 460px; left: 20px;">
     <div class="title-bar linux">Linux <span class="controls"><span onclick="this.closest('.window').remove()">×</span></span></div>
-    <iframe srcdoc="<!DOCTYPE html><html><body style='margin:0;background:#111;color:#0f0;font-family:monospace;'>user@ubuntu:~$ _</body></html>" style="border: none; width: 100%; height: 100%;"></iframe>
+    <iframe src="linux.html"></iframe>
   </div>
 
   <!-- Mac -->
-  <div class="window" style="top: 460px; left: 640px;">
+  <div class="window" style="top: 460px; left: 650px;">
     <div class="title-bar mac">Mac Terminal <span class="controls"><span onclick="this.closest('.window').remove()">×</span></span></div>
-    <iframe srcdoc="<!DOCTYPE html><html><body style='margin:0;background:#2e2e2e;color:#ffffff;font-family:monaco;'>% user@macbook ~ % _</body></html>" style="border: none; width: 100%; height: 100%;"></iframe>
+    <iframe src="mac.html"></iframe>
   </div>
 
   <script>
+    // ウィンドウ移動ロジック
     let dragTarget = null, offsetX = 0, offsetY = 0;
+
     document.querySelectorAll('.title-bar').forEach(bar => {
       bar.addEventListener('mousedown', e => {
         dragTarget = bar.parentElement;
@@ -311,12 +86,14 @@
         offsetY = e.clientY - dragTarget.offsetTop;
       });
     });
+
     document.addEventListener('mousemove', e => {
       if (dragTarget) {
         dragTarget.style.left = (e.clientX - offsetX) + 'px';
         dragTarget.style.top = (e.clientY - offsetY) + 'px';
       }
     });
+
     document.addEventListener('mouseup', () => dragTarget = null);
   </script>
 </body>
