@@ -155,15 +155,6 @@
     function bringToFront(el) {
       el.style.zIndex = topZ++;
     }
-
-    // スクロールを無効にする
-    $(window).on('touchmove.noScroll', function(e) {
-    e.preventDefault();
-    });
- 
-    // スクロール無効を解除する
-    $(window).off('.noScroll');
-
   </script>
 </body>
 </html>
