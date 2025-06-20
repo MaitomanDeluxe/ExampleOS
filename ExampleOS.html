@@ -2,134 +2,159 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
-  <title>ExampleOS</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>仮想ターミナルOS</title>
   <style>
     html, body {
       margin: 0;
+      background-color: #1e1e1e;
+      font-family: monospace;
+      height: 100vh;
       overflow: hidden;
-      background: black;
       user-select: none;
       -webkit-user-select: none;
       touch-action: none;
+      
     }
-    canvas {
-      display: block;
-      width: 100vw;
-      height: 100vh;
+
+    .window {
+      position: absolute;
+      width: 600px;
+      height: 400px;
+      background: #000;
+      border: 1px solid #666;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.6);
+      display: flex;
+      flex-direction: column;
+      resize: both;
+      overflow: hidden;
+      z-index: 1;
+      cursor: move;
+    }
+
+    iframe {
+      border: none;
+      width: 100%;
+      height: 100%;
+      flex-grow: 1;
+    }
+
+    .taskbar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 40px;
+      background: #222;
+      display: flex;
+      align-items: center;
+      padding: 0 10px;
+      box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.5);
+      z-index: 1000;
+    }
+
+    .taskbar button {
+      margin-right: 10px;
+      padding: 6px 12px;
+      font-size: 14px;
+      font-weight: bold;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      background-color: #444;
+      color: #fff;
+      transition: background 0.2s;
+    }
+
+    .taskbar button:hover {
+      background-color: #666;
+    }
+
+    .hidden {
+      display: none !important;
     }
   </style>
 </head>
 <body>
-<canvas id="osCanvas"></canvas>
-<script>
-const canvas = document.getElementById('osCanvas');
-const ctx = canvas.getContext('2d');
-canvas.width = window.innerWidth;
-canvas.height = window.innerHeight;
 
-let stage = 'lock'; // lock → login → desktop
-const bg = new Image();
-bg.src = 'OS.jpeg'; // ファイル名を「OS.jpeg」に変更
+  <!-- 仮想ターミナルウィンドウ -->
+  <div id="cmd" class="window" style="top: 20px; left: 20px; z-index: 2;">
+    <iframe src="cmd.html"></iframe>
+  </div>
+  <div id="ps" class="window" style="top: 40px; left: 660px;">
+    <iframe src="shell.html"></iframe>
+  </div>
+  <div id="linux" class="window" style="top: 460px; left: 20px;">
+    <iframe src="linux.html"></iframe>
+  </div>
+  <div id="mac" class="window" style="top: 460px; left: 660px;">
+    <iframe src="mac.html"></iframe>
+  </div>
 
-let timeStr = '';
-function updateTime() {
-  const now = new Date();
-  timeStr = now.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'});
-}
-setInterval(updateTime, 1000);
-updateTime();
+  <!-- タスクバー -->
+  <div class="taskbar">
+    <button onclick="toggleWindow('cmd')">Cmd</button>
+    <button onclick="toggleWindow('ps')">PowerShell</button>
+    <button onclick="toggleWindow('linux')">Linux</button>
+    <button onclick="toggleWindow('mac')">Mac</button>
+  </div>
 
-const windows = [
-  { title: 'Cmd.exe', x: 50, y: 100, w: 400, h: 300, color: '#000', text: 'C:\\Users\\>' },
-  { title: 'PowerShell', x: 480, y: 100, w: 400, h: 300, color: '#012456', text: 'PS C:\\Users\\>' },
-  { title: 'Linux Terminal', x: 50, y: 420, w: 400, h: 300, color: '#002b36', text: '$ ' },
-  { title: 'Mac Terminal', x: 480, y: 420, w: 400, h: 300, color: '#2e2e2e', text: '% ' },
-];
+  <script>
+    // ドラッグ移動 (マウス & タッチ)
+    let dragTarget = null, offsetX = 0, offsetY = 0;
 
-let dragging = null, offsetX = 0, offsetY = 0;
+    document.querySelectorAll('.window').forEach(win => {
+      win.addEventListener('mousedown', e => {
+        if (e.target.tagName !== 'IFRAME') {
+          dragTarget = win;
+          bringToFront(win);
+          offsetX = e.clientX - win.offsetLeft;
+          offsetY = e.clientY - win.offsetTop;
+        }
+      });
 
-canvas.addEventListener('mousedown', e => {
-  const mx = e.offsetX, my = e.offsetY;
-  windows.forEach(win => {
-    if (mx > win.x && mx < win.x + win.w && my > win.y && my < win.y + 30) {
-      dragging = win;
-      offsetX = mx - win.x;
-      offsetY = my - win.y;
+      win.addEventListener('touchstart', e => {
+        const touch = e.touches[0];
+        dragTarget = win;
+        bringToFront(win);
+        offsetX = touch.clientX - win.offsetLeft;
+        offsetY = touch.clientY - win.offsetTop;
+      });
+    });
+
+    document.addEventListener('mousemove', e => {
+      if (dragTarget) {
+        dragTarget.style.left = (e.clientX - offsetX) + 'px';
+        dragTarget.style.top = (e.clientY - offsetY) + 'px';
+      }
+    });
+
+    document.addEventListener('mouseup', () => dragTarget = null);
+
+    document.addEventListener('touchmove', e => {
+      if (dragTarget) {
+        const touch = e.touches[0];
+        dragTarget.style.left = (touch.clientX - offsetX) + 'px';
+        dragTarget.style.top = (touch.clientY - offsetY) + 'px';
+      }
+    });
+
+    document.addEventListener('touchend', () => dragTarget = null);
+
+    // ウィンドウ表示切替
+    function toggleWindow(id) {
+      const win = document.getElementById(id);
+      if (win.classList.contains('hidden')) {
+        win.classList.remove('hidden');
+      }
+      bringToFront(win);
     }
-  });
-});
 
-canvas.addEventListener('mouseup', () => dragging = null);
-
-canvas.addEventListener('mousemove', e => {
-  if (dragging) {
-    dragging.x = e.offsetX - offsetX;
-    dragging.y = e.offsetY - offsetY;
-    draw();
-  }
-});
-
-canvas.addEventListener('click', () => {
-  if (stage === 'lock') {
-    stage = 'login';
-    draw();
-  } else if (stage === 'login') {
-    stage = 'loading';
-    draw();
-    setTimeout(() => {
-      stage = 'desktop';
-      draw();
-    }, 4000);
-  }
-});
-
-function drawWindow(win) {
-  ctx.fillStyle = '#ccc';
-  ctx.fillRect(win.x, win.y, win.w, 30);
-  ctx.fillStyle = win.color;
-  ctx.fillRect(win.x, win.y + 30, win.w, win.h - 30);
-
-  ctx.fillStyle = '#000';
-  ctx.font = 'bold 14px sans-serif';
-  ctx.fillText(win.title, win.x + 10, win.y + 20);
-
-  ctx.fillStyle = '#0f0';
-  ctx.font = '14px monospace';
-  ctx.fillText(win.text, win.x + 10, win.y + 50);
-}
-
-function draw() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  if (stage === 'lock') {
-    ctx.drawImage(bg, 0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = '#fff';
-    ctx.font = '60px sans-serif';
-    ctx.fillText(timeStr, canvas.width / 2 - 80, canvas.height / 2 + 160);
-  } else if (stage === 'login') {
-    ctx.drawImage(bg, 0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = 'rgba(0,0,0,0.6)';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = '#fff';
-    ctx.font = '30px sans-serif';
-    ctx.fillText('サインイン ▶', canvas.width / 2 - 80, canvas.height / 2);
-  } else if (stage === 'loading') {
-    ctx.fillStyle = '#111';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = '#fff';
-    ctx.font = '20px sans-serif';
-    ctx.fillText('お待ちください...', canvas.width / 2 - 80, canvas.height / 2);
-    ctx.beginPath();
-    ctx.arc(canvas.width / 2, canvas.height / 2 + 40, 20, 0, Math.PI * 1.5);
-    ctx.strokeStyle = '#fff';
-    ctx.lineWidth = 3;
-    ctx.stroke();
-  } else if (stage === 'desktop') {
-    ctx.fillStyle = '#1e1e1e';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    windows.forEach(drawWindow);
-  }
-}
-bg.onload = draw;
-</script>
+    // 最前面に
+    let topZ = 3;
+    function bringToFront(el) {
+      el.style.zIndex = topZ++;
+    }
+  </script>
 </body>
 </html>
