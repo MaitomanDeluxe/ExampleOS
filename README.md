@@ -2,8 +2,7 @@
 
 このプロジェクトは、**コマンドプロンプト (cmd.exe)**、**PowerShell**, および **Linux (Ubuntu) ターミナル** の機能をHTMLとJavaScriptのみで再現したものです。ブラウザ上で動作し、OS不要・インストール不要で使用できます。
 
-## https://maitomandeluxe.github.io/HTML-Terminal-Emulator/
-
+＃# https://maitomandeluxe.github.io/ExampleOS/
 ## 🔧 構成ファイル一覧
 
 | ファイル名       | 説明                           |
