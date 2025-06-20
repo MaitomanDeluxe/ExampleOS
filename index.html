@@ -34,6 +34,11 @@
       height: 100px;
       border-radius: 50%;
       margin-bottom: 10px;
+      border: 2px solid rgba(255,255,255,0.7);
+    }
+    #loginBox div {
+      font-size: 28px;
+      margin-bottom: 10px;
     }
     #pinInput {
       padding: 10px;
@@ -42,7 +47,7 @@
       border-radius: 10px;
       border: none;
       outline: none;
-      text-align: center;
+      text-align: left;
     }
     #hintBtn {
       margin-top: 10px;
@@ -88,7 +93,7 @@
 <div id="loginBox">
   <img src="OS.jpeg" alt="User">
   <div>管理者</div>
-  <input type="password" id="pinInput" maxlength="4" placeholder="PIN (1234)"><br>
+  <input type="password" id="pinInput" maxlength="4" placeholder="PIN"><br>
   <button id="hintBtn">ヒント</button>
 </div>
 <div id="hintBox">ｯ忘れんなよ（笑）</div>
@@ -144,14 +149,6 @@ document.getElementById('pinInput').addEventListener('keydown', e => {
       }, 5000 + Math.random() * 2000);
     } else {
       e.target.style.border = '2px solid red';
-      if (!document.getElementById('pinError')) {
-    const err = document.createElement('div');
-    err.id = 'pinError';
-    err.style.color = 'red';
-    err.textContent = 'PINが違います';
-    e.target.insertAdjacentElement('afterend', err);
-    setTimeout(() => err.remove(), 3000);
-  }
     }
   }
 });
@@ -161,7 +158,7 @@ function draw() {
   if (stage === 'lock') {
     ctx.drawImage(bg, 0, 0, canvas.width, canvas.height);
     ctx.fillStyle = '#fff';
-    ctx.font = '90px sans-serif';
+    ctx.font = '60px sans-serif';
     ctx.fillText(timeStr, canvas.width / 2 - 80, 265);
   } else if (stage === 'login') {
     ctx.drawImage(bg, 0, 0, canvas.width, canvas.height);
