@@ -2,18 +2,18 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>仮想ターミナルOS</title>
   <style>
     html, body {
       margin: 0;
-      padding: 0;
       background-color: #1e1e1e;
       font-family: monospace;
+      height: 100vh;
       overflow: hidden;
       user-select: none;
-      -webkit-user-select: none; /* iOS用 */
-      touch-action: none; /* モバイルでの意図しない動作防止 */
+      -webkit-user-select: none;
+      touch-action: none;
     }
 
     .window {
@@ -27,8 +27,8 @@
       flex-direction: column;
       resize: both;
       overflow: hidden;
+      z-index: 1;
       cursor: move;
-      touch-action: none;
     }
 
     iframe {
@@ -37,41 +37,87 @@
       height: 100%;
       flex-grow: 1;
     }
+
+    .taskbar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 40px;
+      background: #222;
+      display: flex;
+      align-items: center;
+      padding: 0 10px;
+      box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.5);
+      z-index: 1000;
+    }
+
+    .taskbar button {
+      margin-right: 10px;
+      padding: 6px 12px;
+      font-size: 14px;
+      font-weight: bold;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      background-color: #444;
+      color: #fff;
+      transition: background 0.2s;
+    }
+
+    .taskbar button:hover {
+      background-color: #666;
+    }
+
+    .hidden {
+      display: none !important;
+    }
   </style>
 </head>
 <body>
-  <!-- Cmd -->
-  <div class="window" style="top: 20px; left: 20px;">
+
+  <!-- 仮想ターミナルウィンドウ -->
+  <div id="cmd" class="window" style="top: 20px; left: 20px; z-index: 2;">
     <iframe src="cmd.html"></iframe>
   </div>
-
-  <!-- PowerShell -->
-  <div class="window" style="top: 40px; left: 650px;">
+  <div id="ps" class="window" style="top: 40px; left: 660px;">
     <iframe src="shell.html"></iframe>
   </div>
-
-  <!-- Linux -->
-  <div class="window" style="top: 460px; left: 20px;">
+  <div id="linux" class="window" style="top: 460px; left: 20px;">
     <iframe src="linux.html"></iframe>
   </div>
-
-  <!-- Mac -->
-  <div class="window" style="top: 460px; left: 650px;">
+  <div id="mac" class="window" style="top: 460px; left: 660px;">
     <iframe src="mac.html"></iframe>
   </div>
 
-  <script>
-    let dragTarget = null;
-    let offsetX = 0, offsetY = 0;
+  <!-- タスクバー -->
+  <div class="taskbar">
+    <button onclick="toggleWindow('cmd')">Cmd</button>
+    <button onclick="toggleWindow('ps')">PowerShell</button>
+    <button onclick="toggleWindow('linux')">Linux</button>
+    <button onclick="toggleWindow('mac')">Mac</button>
+  </div>
 
-    // マウスドラッグ
+  <script>
+    // ドラッグ移動 (マウス & タッチ)
+    let dragTarget = null, offsetX = 0, offsetY = 0;
+
     document.querySelectorAll('.window').forEach(win => {
       win.addEventListener('mousedown', e => {
         if (e.target.tagName !== 'IFRAME') {
           dragTarget = win;
+          bringToFront(win);
           offsetX = e.clientX - win.offsetLeft;
           offsetY = e.clientY - win.offsetTop;
         }
+      });
+
+      win.addEventListener('touchstart', e => {
+        const touch = e.touches[0];
+        dragTarget = win;
+        bringToFront(win);
+        offsetX = touch.clientX - win.offsetLeft;
+        offsetY = touch.clientY - win.offsetTop;
       });
     });
 
@@ -82,21 +128,7 @@
       }
     });
 
-    document.addEventListener('mouseup', () => {
-      dragTarget = null;
-    });
-
-    // タッチ対応（iOS対応）
-    document.querySelectorAll('.window').forEach(win => {
-      win.addEventListener('touchstart', e => {
-        if (e.target.tagName !== 'IFRAME') {
-          const touch = e.touches[0];
-          dragTarget = win;
-          offsetX = touch.clientX - win.offsetLeft;
-          offsetY = touch.clientY - win.offsetTop;
-        }
-      });
-    });
+    document.addEventListener('mouseup', () => dragTarget = null);
 
     document.addEventListener('touchmove', e => {
       if (dragTarget) {
@@ -106,9 +138,22 @@
       }
     });
 
-    document.addEventListener('touchend', () => {
-      dragTarget = null;
-    });
+    document.addEventListener('touchend', () => dragTarget = null);
+
+    // ウィンドウ表示切替
+    function toggleWindow(id) {
+      const win = document.getElementById(id);
+      if (win.classList.contains('hidden')) {
+        win.classList.remove('hidden');
+      }
+      bringToFront(win);
+    }
+
+    // 最前面に
+    let topZ = 3;
+    function bringToFront(el) {
+      el.style.zIndex = topZ++;
+    }
   </script>
 </body>
 </html>
