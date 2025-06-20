@@ -14,11 +14,7 @@
       user-select: none;
       -webkit-user-select: none;
       touch-action: none;
-      position: fixed;
-      top: 0;
-      bottom: 0;
-      left: 0;
-      right: 0;
+      
     }
 
     .window {
@@ -159,6 +155,15 @@
     function bringToFront(el) {
       el.style.zIndex = topZ++;
     }
+
+    // スクロールを無効にする
+    $(window).on('touchmove.noScroll', function(e) {
+    e.preventDefault();
+    });
+ 
+    // スクロール無効を解除する
+    $(window).off('.noScroll');
+
   </script>
 </body>
 </html>
