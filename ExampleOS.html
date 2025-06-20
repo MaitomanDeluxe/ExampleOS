@@ -62,6 +62,10 @@
       padding: 20px;
       display: none;
       z-index: 1001;
+      color: white;
+    }
+    #runPrompt h3 {
+      margin: 0 0 10px;
     }
     #runPrompt input {
       width: 300px;
@@ -70,6 +74,18 @@
       background: #111;
       color: #fff;
       border: 1px solid #555;
+    }
+    #fileButton {
+      margin-left: 10px;
+      padding: 6px 10px;
+      background: #444;
+      border: none;
+      color: white;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    #fileButton:hover {
+      background: #666;
     }
     .hidden {
       display: none !important;
@@ -88,7 +104,10 @@
 
   <!-- 実行プロンプト -->
   <div id="runPrompt">
+    <h3>ファイル名を指定して実行</h3>
     <input type="text" id="runInput" placeholder="Terminals/cmd.html">
+    <button id="fileButton">📁</button>
+    <input type="file" id="fileLoader" accept=".html" style="display:none">
   </div>
 
   <script>
@@ -121,7 +140,7 @@
     });
 
     document.addEventListener('mouseup', () => dragTarget = null);
-
+    document.addEventListener('touchend', () => dragTarget = null);
     document.addEventListener('touchmove', e => {
       if (dragTarget) {
         const touch = e.touches[0];
@@ -130,19 +149,18 @@
       }
     });
 
-    document.addEventListener('touchend', () => dragTarget = null);
-
-    // 最前面に表示
     let topZ = 3;
     function bringToFront(el) {
       el.style.zIndex = topZ++;
     }
 
-    // Shift+R でファイル名指定実行ウィンドウ表示
+    // Shift+Rで実行プロンプト表示（入力には R を含めない）
     document.addEventListener('keydown', e => {
-      if (e.shiftKey && e.key.toLowerCase() === 'r') {
+      if (e.shiftKey && e.code === 'KeyR') {
+        e.preventDefault();
         const prompt = document.getElementById('runPrompt');
         prompt.style.display = 'block';
+        document.getElementById('runInput').value = '';
         document.getElementById('runInput').focus();
       } else if (e.key === 'Escape') {
         document.getElementById('runPrompt').style.display = 'none';
@@ -184,6 +202,30 @@
         offsetY = touch.clientY - win.offsetTop;
       });
     }
+
+    // 📁ボタンクリック → ローカルHTML読み込み
+    document.getElementById('fileButton').addEventListener('click', () => {
+      document.getElementById('fileLoader').click();
+    });
+
+    document.getElementById('fileLoader').addEventListener('change', e => {
+      const file = e.target.files[0];
+      if (file && file.name.endsWith('.html')) {
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+          const win = document.createElement('div');
+          win.className = 'window';
+          win.style.top = '120px';
+          win.style.left = '120px';
+          win.innerHTML = `<iframe srcdoc="${evt.target.result}"></iframe>`;
+          document.body.appendChild(win);
+          makeDraggable(win);
+          bringToFront(win);
+          document.getElementById('runPrompt').style.display = 'none';
+        };
+        reader.readAsText(file);
+      }
+    });
   </script>
 </body>
 </html>
