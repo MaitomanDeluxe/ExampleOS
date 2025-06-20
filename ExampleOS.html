@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>Virtual Terminal OS</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      background: #1b1b1b;
+      font-family: monospace;
+      overflow: hidden;
+    }
+    .desktop {
+      width: 100%;
+      height: 100%;
+      position: relative;
+    }
+    .window {
+      position: absolute;
+      width: 600px;
+      height: 400px;
+      background: #222;
+      border: 1px solid #444;
+      box-shadow: 0 0 8px #000;
+      display: flex;
+      flex-direction: column;
+      resize: both;
+      overflow: hidden;
+    }
+    .title-bar {
+      background: #444;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 10px;
+      cursor: move;
+      color: white;
+    }
+    .controls span {
+      margin-left: 10px;
+      cursor: pointer;
+      color: #ccc;
+    }
+    .terminal {
+      flex-grow: 1;
+      padding: 10px;
+      background: black;
+      color: white;
+      overflow-y: auto;
+      white-space: pre-wrap;
+    }
+  </style>
+</head>
+<body>
+  <div class="desktop">
+    <div class="window" style="top: 30px; left: 30px;">
+      <div class="title-bar" onmousedown="startDrag(event, this)">
+        <div>Cmd.exe</div>
+        <div class="controls"><span onclick="closeWindow(this)">×</span></div>
+      </div>
+      <div class="terminal">C:\\Users\\127.0.0.1&gt; help\n\nmkdir, rd, cls, echo, exit...</div>
+    </div>
+
+    <div class="window" style="top: 60px; left: 680px;">
+      <div class="title-bar" onmousedown="startDrag(event, this)">
+        <div>PowerShell</div>
+        <div class="controls"><span onclick="closeWindow(this)">×</span></div>
+      </div>
+      <div class="terminal">PS C:\\Users\\127.0.0.1&gt; Get-Help\n\nGet-ChildItem, Get-Process...</div>
+    </div>
+
+    <div class="window" style="top: 460px; left: 30px;">
+      <div class="title-bar" onmousedown="startDrag(event, this)">
+        <div>Linux</div>
+        <div class="controls"><span onclick="closeWindow(this)">×</span></div>
+      </div>
+      <div class="terminal">$ ls\nfile.txt  src/  log.txt\n$ pwd\n/home/user</div>
+    </div>
+
+    <div class="window" style="top: 480px; left: 680px;">
+      <div class="title-bar" onmousedown="startDrag(event, this)">
+        <div>macOS Terminal</div>
+        <div class="controls"><span onclick="closeWindow(this)">×</span></div>
+      </div>
+      <div class="terminal">% whoami\nmaito\n% cd ~/Documents</div>
+    </div>
+  </div>
+
+  <script>
+    let dragged = null;
+    let offsetX = 0, offsetY = 0;
+
+    function startDrag(e, bar) {
+      dragged = bar.parentElement;
+      offsetX = e.clientX - dragged.offsetLeft;
+      offsetY = e.clientY - dragged.offsetTop;
+      document.addEventListener("mousemove", drag);
+      document.addEventListener("mouseup", endDrag);
+    }
+
+    function drag(e) {
+      if (dragged) {
+        dragged.style.left = (e.clientX - offsetX) + "px";
+        dragged.style.top = (e.clientY - offsetY) + "px";
+      }
+    }
+
+    function endDrag() {
+      document.removeEventListener("mousemove", drag);
+      document.removeEventListener("mouseup", endDrag);
+      dragged = null;
+    }
+
+    function closeWindow(btn) {
+      btn.closest(".window").style.display = "none";
+    }
+  </script>
+</body>
+</html>
