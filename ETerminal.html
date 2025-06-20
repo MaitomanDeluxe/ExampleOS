@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>Ubuntu Terminal</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      background-color: black;
+      color: #00ff00;
+      font-family: "Ubuntu Mono", monospace;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    .taskbar {
+      background-color: white;
+      color: black;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 4px 8px;
+      height: 30px;
+      font-family: sans-serif;
+    }
+
+    .title {
+      font-size: 14px;
+      font-weight: bold;
+    }
+
+    .window-controls {
+      display: flex;
+      gap: 10px;
+    }
+
+    .window-controls span {
+      cursor: default;
+      font-size: 16px;
+    }
+
+    .window-controls span:hover {
+      background-color: #ccc;
+      padding: 0 4px;
+    }
+
+    .terminal {
+      padding: 10px;
+      overflow-y: auto;
+      height: calc(100% - 30px);
+      white-space: pre-wrap;
+    }
+
+    .line {
+      display: flex;
+      flex-wrap: wrap;
+    }
+
+    .prompt {
+      user-select: none;
+    }
+
+    .input {
+      outline: none;
+      flex-grow: 1;
+      caret-color: #00ff00;
+      color: #00ff00;
+    }
+
+    .input.invalid {
+      color: #ff4444 !important;
+    }
+
+    .output {
+      white-space: pre-wrap;
+      margin-left: 10px;
+      color: #00ff00;
+    }
+  </style>
+</head>
+<body>
+  <div class="taskbar">
+    <div class="title">ExampleOS Terminal</div>
+    <div class="window-controls">
+      <span title="最小化">━</span>
+      <span title="最大化">◻</span>
+      <span title="閉じる" onclick="window.close()">✕</span>
+    </div>
+  </div>
+
+  <div class="terminal" id="terminal"></div>
+  <script>
+    const terminal = document.getElementById("terminal");
+    let user = "user";
+    let host = "ExampleOS";
+    let currentPath = "~";
+
+    const validCommands = [
+      "ls", "cd", "pwd", "clear", "exit", "whoami", "echo", "uname", "help"
+    ];
+
+    function addLine(text, className = "") {
+      const line = document.createElement("div");
+      line.textContent = text;
+      if (className) line.classList.add(className);
+      terminal.appendChild(line);
+    }
+
+    let tabState = { prefix: '', matches: [], index: 0 };
+
+    function getMatchingCommands(prefix) {
+      const lower = prefix.toLowerCase();
+      return validCommands.filter(cmd => cmd.startsWith(lower));
+    }
+
+    function addPrompt() {
+      const line = document.createElement("div");
+      line.className = "line";
+
+      const prompt = document.createElement("span");
+      prompt.className = "prompt";
+      prompt.textContent = `${user}@${host}:${currentPath}$ `;
+
+      const input = document.createElement("span");
+      input.className = "input";
+      input.contentEditable = true;
+      input.spellcheck = false;
+      input.autocapitalize = "off";
+      input.autocorrect = "off";
+
+      input.addEventListener("input", () => {
+        const text = input.textContent.trim();
+        if (text && !validCommands.some(cmd => cmd.startsWith(text))) {
+          input.classList.add("invalid");
+        } else {
+          input.classList.remove("invalid");
+        }
+        tabState = { prefix: text, matches: getMatchingCommands(text), index: 0 };
+      });
+
+      input.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          const command = input.textContent.trim();
+          input.contentEditable = false;
+          runCommand(command);
+        } else if (e.key === "Tab") {
+          e.preventDefault();
+          if (tabState.matches.length > 0) {
+            const suggestion = tabState.matches[tabState.index];
+            input.textContent = suggestion;
+            placeCaretAtEnd(input);
+            tabState.index = (tabState.index + 1) % tabState.matches.length;
+          }
+        }
+      });
+
+      line.appendChild(prompt);
+      line.appendChild(input);
+      terminal.appendChild(line);
+      input.focus();
+      terminal.scrollTop = terminal.scrollHeight;
+    }
+
+    function placeCaretAtEnd(el) {
+      const range = document.createRange();
+      const sel = window.getSelection();
+      range.selectNodeContents(el);
+      range.collapse(false);
+      sel.removeAllRanges();
+      sel.addRange(range);
+    }
+
+    function runCommand(cmd) {
+      const output = document.createElement("div");
+      output.className = "output";
+
+      switch (cmd) {
+        case "":
+          break;
+        case "ls":
+          output.textContent = "Desktop  Documents  Downloads  Music  Pictures  Videos";
+          break;
+        case "pwd":
+          output.textContent = "/home/" + user;
+          break;
+        case "whoami":
+          output.textContent = user;
+          break;
+        case "uname":
+          output.textContent = "Linux";
+          break;
+        case "cd":
+          currentPath = "~";
+          break;
+        case "clear":
+          terminal.innerHTML = "";
+          addPrompt();
+          return;
+        case "exit":
+          output.textContent = "ログアウト中...";
+          terminal.appendChild(output);
+          setTimeout(() => window.close(), 500);
+          return;
+        case "help":
+          output.textContent = "使用可能コマンド: " + validCommands.join(", ");
+          break;
+        default:
+          output.textContent = `bash: ${cmd}: command not found`;
+      }
+
+      terminal.appendChild(output);
+      addPrompt();
+    }
+
+    addLine("Welcome to Example Terminal!\n");
+    addPrompt();
+  </script>
+</body>
+</html>
