@@ -29,7 +29,7 @@ canvas.height = window.innerHeight;
 
 let stage = 'lock'; // lock → login → desktop
 const bg = new Image();
-bg.src = 'data:image/jpeg;base64,REPLACE_WITH_BASE64'; // IMG_0271.jpeg のbase64文字列で置換
+bg.src = 'OS.jpeg'; // ファイル名を「OS.jpeg」に変更
 
 let timeStr = '';
 function updateTime() {
@@ -118,7 +118,6 @@ function draw() {
     ctx.fillStyle = '#fff';
     ctx.font = '20px sans-serif';
     ctx.fillText('お待ちください...', canvas.width / 2 - 80, canvas.height / 2);
-    // クルクル（簡易）
     ctx.beginPath();
     ctx.arc(canvas.width / 2, canvas.height / 2 + 40, 20, 0, Math.PI * 1.5);
     ctx.strokeStyle = '#fff';
