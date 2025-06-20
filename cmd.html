@@ -2,20 +2,20 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
-  <title>Cmd.exe Emulator</title>
+  <title>cmd.exe Emulator</title>
   <style>
     html, body {
       margin: 0;
       padding: 0;
       background: black;
       color: white;
-      font-family: monospace;
+      font-family: Consolas, monospace;
       height: 100%;
       overflow: hidden;
     }
 
     .title-bar {
-      background-color: #222;
+      background-color: #000080;
       color: white;
       height: 30px;
       display: flex;
@@ -24,7 +24,6 @@
       padding: 0 10px;
       font-family: sans-serif;
       user-select: none;
-      -webkit-app-region: drag;
     }
 
     .title {
@@ -39,7 +38,6 @@
       width: 30px;
       height: 30px;
       cursor: pointer;
-      -webkit-app-region: no-drag;
     }
 
     .window-controls button:hover {
@@ -67,6 +65,7 @@
       flex-grow: 1;
       caret-color: white;
       color: #ffff66;
+      text-transform: none;
     }
 
     .input.invalid {
@@ -81,17 +80,15 @@
   </style>
 </head>
 <body>
-  <!-- タイトルバー -->
   <div class="title-bar">
-    <div class="title">Cmd.exe</div>
+    <div class="title">C:\Windows\System32\cmd.exe</div>
     <div class="window-controls">
-      <button class="minimize" onclick="minimizeTerminal()">ー</button>
-      <button class="maximize" onclick="toggleMaximize()">□</button>
-      <button class="close" onclick="window.close()">×</button>
+      <button onclick="minimizeTerminal()">ー</button>
+      <button onclick="toggleMaximize()">□</button>
+      <button onclick="window.close()">×</button>
     </div>
   </div>
 
-  <!-- ターミナル表示部 -->
   <div class="terminal" id="terminal"></div>
 
   <script>
@@ -100,20 +97,22 @@
     let isMinimized = false;
     let isMaximized = false;
 
-    // 仮想ファイルシステム
-    let fileSystem = {
-      "C:\\": { type: "dir", children: {
-        "Users\\": { type: "dir", children: {
-          "127.0.0.1\\": { type: "dir", children: {} }
-        }}
-      }}
-    };
-
-    // IP取得
     fetch("https://api.ipify.org?format=json").then(res => res.json()).then(data => {
       currentDir = "C:\\Users\\" + data.ip;
       updatePromptTexts();
     });
+
+    let fileSystem = {
+      "C:\\": {
+        type: "dir", children: {
+          "Users\\": {
+            type: "dir", children: {
+              "127.0.0.1\\": { type: "dir", children: {} }
+            }
+          }
+        }
+      }
+    };
 
     function updatePromptTexts() {
       document.querySelectorAll(".prompt").forEach(p => {
@@ -122,13 +121,8 @@
     }
 
     function minimizeTerminal() {
-      if (isMinimized) {
-        terminal.style.display = "block";
-        isMinimized = false;
-      } else {
-        terminal.style.display = "none";
-        isMinimized = true;
-      }
+      terminal.style.display = isMinimized ? "block" : "none";
+      isMinimized = !isMinimized;
     }
 
     function toggleMaximize() {
@@ -195,11 +189,7 @@
 
         case "dir": {
           const dir = fileSystem[currentDir + "\\"] || fileSystem[currentDir];
-          if (dir && dir.children) {
-            out.textContent = Object.keys(dir.children).join("\n") || "ファイルが見つかりません";
-          } else {
-            out.textContent = "指定されたパスが見つかりません";
-          }
+          out.textContent = dir?.children ? Object.keys(dir.children).join("\n") : "ファイルが見つかりません";
           break;
         }
 
@@ -207,7 +197,7 @@
           const path = args[0];
           const target = resolvePath(path);
           if (fileSystem[target] && fileSystem[target].type === "dir") {
-            currentDir = target.slice(-1) === "\\" ? target.slice(0, -1) : target;
+            currentDir = target.endsWith("\\") ? target.slice(0, -1) : target;
           } else {
             out.textContent = "指定されたパスが見つかりません";
           }
@@ -219,7 +209,7 @@
           const newPath = resolvePath(name);
           fileSystem[newPath] = { type: "dir", children: {} };
           const parent = fileSystem[currentDir + "\\"];
-          if (parent && parent.children) {
+          if (parent?.children) {
             parent.children[name + "\\"] = fileSystem[newPath];
           }
           out.textContent = `ディレクトリを作成しました: ${name}`;
@@ -235,7 +225,9 @@
               delete fileSystem[currentDir + "\\"].children[name + "\\"];
             }
             out.textContent = `${name} を削除しました。`;
-          } else out.textContent = `ディレクトリが見つかりません: ${name}`;
+          } else {
+            out.textContent = `ディレクトリが見つかりません: ${name}`;
+          }
           break;
         }
 
@@ -257,11 +249,7 @@
         case "type": {
           const name = args[0];
           const path = resolvePath(name);
-          if (fileSystem[path] && fileSystem[path].type === "file") {
-            out.textContent = fileSystem[path].content;
-          } else {
-            out.textContent = `ファイルが見つかりません: ${name}`;
-          }
+          out.textContent = fileSystem[path]?.type === "file" ? fileSystem[path].content : `ファイルが見つかりません: ${name}`;
           break;
         }
 
