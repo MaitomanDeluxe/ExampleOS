@@ -111,43 +111,49 @@
   </div>
 
   <script>
-    let dragTarget = null, offsetX = 0, offsetY = 0;
+    // iOS対応のドラッグ移動（マウス & タッチ）
+let dragTarget = null, offsetX = 0, offsetY = 0;
 
-    document.querySelectorAll('.window').forEach(win => {
-      win.addEventListener('mousedown', e => {
-        if (e.target.tagName !== 'IFRAME') {
-          dragTarget = win;
-          bringToFront(win);
-          offsetX = e.clientX - win.offsetLeft;
-          offsetY = e.clientY - win.offsetTop;
-        }
-      });
+function makeDraggable(win) {
+  win.addEventListener('mousedown', e => {
+    if (e.target.tagName !== 'IFRAME') {
+      dragTarget = win;
+      bringToFront(win);
+      offsetX = e.clientX - win.offsetLeft;
+      offsetY = e.clientY - win.offsetTop;
+    }
+  });
 
-      win.addEventListener('touchstart', e => {
-        const touch = e.touches[0];
-        dragTarget = win;
-        bringToFront(win);
-        offsetX = touch.clientX - win.offsetLeft;
-        offsetY = touch.clientY - win.offsetTop;
-      });
-    });
+  win.addEventListener('touchstart', e => {
+    const touch = e.touches[0];
+    dragTarget = win;
+    bringToFront(win);
+    offsetX = touch.clientX - win.offsetLeft;
+    offsetY = touch.clientY - win.offsetTop;
+    e.preventDefault();
+  }, { passive: false });
+}
 
-    document.addEventListener('mousemove', e => {
-      if (dragTarget) {
-        dragTarget.style.left = (e.clientX - offsetX) + 'px';
-        dragTarget.style.top = (e.clientY - offsetY) + 'px';
-      }
-    });
+document.addEventListener('mousemove', e => {
+  if (dragTarget) {
+    dragTarget.style.left = (e.clientX - offsetX) + 'px';
+    dragTarget.style.top = (e.clientY - offsetY) + 'px';
+  }
+});
 
-    document.addEventListener('mouseup', () => dragTarget = null);
-    document.addEventListener('touchend', () => dragTarget = null);
-    document.addEventListener('touchmove', e => {
-      if (dragTarget) {
-        const touch = e.touches[0];
-        dragTarget.style.left = (touch.clientX - offsetX) + 'px';
-        dragTarget.style.top = (touch.clientY - offsetY) + 'px';
-      }
-    });
+document.addEventListener('mouseup', () => dragTarget = null);
+
+document.addEventListener('touchmove', e => {
+  if (dragTarget) {
+    const touch = e.touches[0];
+    dragTarget.style.left = (touch.clientX - offsetX) + 'px';
+    dragTarget.style.top = (touch.clientY - offsetY) + 'px';
+    e.preventDefault();
+  }
+}, { passive: false });
+
+document.addEventListener('touchend', () => dragTarget = null);
+
 
     let topZ = 3;
     function bringToFront(el) {
