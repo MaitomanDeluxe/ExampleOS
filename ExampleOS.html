@@ -1,122 +1,98 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <title>Virtual Terminal OS</title>
+  <meta charset="UTF-8" />
+  <title>仮想ターミナルOS</title>
   <style>
-    html, body {
+    body {
       margin: 0;
       padding: 0;
-      height: 100%;
-      background: #1b1b1b;
+      background-color: #1e1e1e;
       font-family: monospace;
       overflow: hidden;
-    }
-    .desktop {
-      width: 100%;
-      height: 100%;
-      position: relative;
     }
     .window {
       position: absolute;
       width: 600px;
       height: 400px;
-      background: #222;
-      border: 1px solid #444;
-      box-shadow: 0 0 8px #000;
+      background: #000;
+      border: 1px solid #666;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.7);
       display: flex;
       flex-direction: column;
       resize: both;
       overflow: hidden;
     }
     .title-bar {
-      background: #444;
-      height: 28px;
+      height: 30px;
+      background: #ccc;
+      color: #000;
       display: flex;
       align-items: center;
       justify-content: space-between;
       padding: 0 10px;
       cursor: move;
-      color: white;
+      font-weight: bold;
     }
+    .title-bar.ps    { background-color: #012456; color: #00bfff; }
+    .title-bar.mac   { background-color: #444;     color: #fff;     }
+    .title-bar.linux { background-color: #222;     color: #0f0;     }
+
     .controls span {
-      margin-left: 10px;
+      margin-left: 8px;
       cursor: pointer;
-      color: #ccc;
     }
     .terminal {
-      flex-grow: 1;
+      flex: 1;
+      background: #000;
+      color: #fff;
       padding: 10px;
-      background: black;
-      color: white;
       overflow-y: auto;
       white-space: pre-wrap;
     }
   </style>
 </head>
 <body>
-  <div class="desktop">
-    <div class="window" style="top: 30px; left: 30px;">
-      <div class="title-bar" onmousedown="startDrag(event, this)">
-        <div>Cmd.exe</div>
-        <div class="controls"><span onclick="closeWindow(this)">×</span></div>
-      </div>
-      <div class="terminal">C:\\Users\\127.0.0.1&gt; help\n\nmkdir, rd, cls, echo, exit...</div>
-    </div>
+  <!-- Cmd -->
+  <div class="window" style="top: 20px; left: 20px;">
+    <div class="title-bar">Cmd.exe <span class="controls"><span onclick="this.closest('.window').remove()">×</span></span></div>
+    <iframe srcdoc="<!DOCTYPE html><html><body style='margin:0;background:#000;color:#0f0;font-family:monospace;'>C:\\Users\\User&gt;_</body></html>" style="border: none; width: 100%; height: 100%;"></iframe>
+  </div>
 
-    <div class="window" style="top: 60px; left: 680px;">
-      <div class="title-bar" onmousedown="startDrag(event, this)">
-        <div>PowerShell</div>
-        <div class="controls"><span onclick="closeWindow(this)">×</span></div>
-      </div>
-      <div class="terminal">PS C:\\Users\\127.0.0.1&gt; Get-Help\n\nGet-ChildItem, Get-Process...</div>
-    </div>
+  <!-- PowerShell -->
+  <div class="window" style="top: 60px; left: 640px;">
+    <div class="title-bar ps">PowerShell <span class="controls"><span onclick="this.closest('.window').remove()">×</span></span></div>
+    <iframe srcdoc="<!DOCTYPE html><html><body style='margin:0;background:#012456;color:#00bfff;font-family:Consolas;'>ps c:\\users\\user&gt;_</body></html>" style="border: none; width: 100%; height: 100%;"></iframe>
+  </div>
 
-    <div class="window" style="top: 460px; left: 30px;">
-      <div class="title-bar" onmousedown="startDrag(event, this)">
-        <div>Linux</div>
-        <div class="controls"><span onclick="closeWindow(this)">×</span></div>
-      </div>
-      <div class="terminal">$ ls\nfile.txt  src/  log.txt\n$ pwd\n/home/user</div>
-    </div>
+  <!-- Linux -->
+  <div class="window" style="top: 460px; left: 20px;">
+    <div class="title-bar linux">Linux <span class="controls"><span onclick="this.closest('.window').remove()">×</span></span></div>
+    <iframe srcdoc="<!DOCTYPE html><html><body style='margin:0;background:#111;color:#0f0;font-family:monospace;'>user@ubuntu:~$ _</body></html>" style="border: none; width: 100%; height: 100%;"></iframe>
+  </div>
 
-    <div class="window" style="top: 480px; left: 680px;">
-      <div class="title-bar" onmousedown="startDrag(event, this)">
-        <div>macOS Terminal</div>
-        <div class="controls"><span onclick="closeWindow(this)">×</span></div>
-      </div>
-      <div class="terminal">% whoami\nmaito\n% cd ~/Documents</div>
-    </div>
+  <!-- Mac -->
+  <div class="window" style="top: 460px; left: 640px;">
+    <div class="title-bar mac">Mac Terminal <span class="controls"><span onclick="this.closest('.window').remove()">×</span></span></div>
+    <iframe srcdoc="<!DOCTYPE html><html><body style='margin:0;background:#2e2e2e;color:#ffffff;font-family:monaco;'>% user@macbook ~ % _</body></html>" style="border: none; width: 100%; height: 100%;"></iframe>
   </div>
 
   <script>
-    let dragged = null;
-    let offsetX = 0, offsetY = 0;
-
-    function startDrag(e, bar) {
-      dragged = bar.parentElement;
-      offsetX = e.clientX - dragged.offsetLeft;
-      offsetY = e.clientY - dragged.offsetTop;
-      document.addEventListener("mousemove", drag);
-      document.addEventListener("mouseup", endDrag);
-    }
-
-    function drag(e) {
-      if (dragged) {
-        dragged.style.left = (e.clientX - offsetX) + "px";
-        dragged.style.top = (e.clientY - offsetY) + "px";
+    let dragTarget = null, offsetX = 0, offsetY = 0;
+    document.querySelectorAll('.title-bar').forEach(bar => {
+      bar.addEventListener('mousedown', e => {
+        dragTarget = bar.parentElement;
+        offsetX = e.clientX - dragTarget.offsetLeft;
+        offsetY = e.clientY - dragTarget.offsetTop;
+      });
+    });
+    document.addEventListener('mousemove', e => {
+      if (dragTarget) {
+        dragTarget.style.left = (e.clientX - offsetX) + 'px';
+        dragTarget.style.top = (e.clientY - offsetY) + 'px';
       }
-    }
-
-    function endDrag() {
-      document.removeEventListener("mousemove", drag);
-      document.removeEventListener("mouseup", endDrag);
-      dragged = null;
-    }
-
-    function closeWindow(btn) {
-      btn.closest(".window").style.display = "none";
-    }
+    });
+    document.addEventListener('mouseup', () => dragTarget = null);
   </script>
 </body>
 </html>
