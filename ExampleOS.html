@@ -2,13 +2,18 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>仮想ターミナルOS</title>
   <style>
-    body {
+    html, body {
       margin: 0;
+      padding: 0;
       background-color: #1e1e1e;
       font-family: monospace;
       overflow: hidden;
+      user-select: none;
+      -webkit-user-select: none; /* iOS用 */
+      touch-action: none; /* モバイルでの意図しない動作防止 */
     }
 
     .window {
@@ -22,7 +27,8 @@
       flex-direction: column;
       resize: both;
       overflow: hidden;
-      cursor: move; /* ←ドラッグっぽい見た目に */
+      cursor: move;
+      touch-action: none;
     }
 
     iframe {
@@ -55,11 +61,13 @@
   </div>
 
   <script>
-    let dragTarget = null, offsetX = 0, offsetY = 0;
+    let dragTarget = null;
+    let offsetX = 0, offsetY = 0;
 
+    // マウスドラッグ
     document.querySelectorAll('.window').forEach(win => {
       win.addEventListener('mousedown', e => {
-        if (e.target.tagName !== 'IFRAME') { // iframeは無視
+        if (e.target.tagName !== 'IFRAME') {
           dragTarget = win;
           offsetX = e.clientX - win.offsetLeft;
           offsetY = e.clientY - win.offsetTop;
@@ -75,6 +83,30 @@
     });
 
     document.addEventListener('mouseup', () => {
+      dragTarget = null;
+    });
+
+    // タッチ対応（iOS対応）
+    document.querySelectorAll('.window').forEach(win => {
+      win.addEventListener('touchstart', e => {
+        if (e.target.tagName !== 'IFRAME') {
+          const touch = e.touches[0];
+          dragTarget = win;
+          offsetX = touch.clientX - win.offsetLeft;
+          offsetY = touch.clientY - win.offsetTop;
+        }
+      });
+    });
+
+    document.addEventListener('touchmove', e => {
+      if (dragTarget) {
+        const touch = e.touches[0];
+        dragTarget.style.left = (touch.clientX - offsetX) + 'px';
+        dragTarget.style.top = (touch.clientY - offsetY) + 'px';
+      }
+    });
+
+    document.addEventListener('touchend', () => {
       dragTarget = null;
     });
   </script>
