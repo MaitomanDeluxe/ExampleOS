@@ -144,6 +144,14 @@ document.getElementById('pinInput').addEventListener('keydown', e => {
       }, 5000 + Math.random() * 2000);
     } else {
       e.target.style.border = '2px solid red';
+      if (!document.getElementById('pinError')) {
+    const err = document.createElement('div');
+    err.id = 'pinError';
+    err.style.color = 'red';
+    err.textContent = 'PINが違います';
+    e.target.insertAdjacentElement('afterend', err);
+    setTimeout(() => err.remove(), 3000);
+  }
     }
   }
 });
