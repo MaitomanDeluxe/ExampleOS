@@ -17,17 +17,40 @@
     .taskbar {
       background-color: white;
       color: black;
-      padding: 6px 10px;
-      font-weight: bold;
-      font-size: 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 4px 8px;
+      height: 30px;
+      box-sizing: border-box;
       font-family: "Segoe UI", sans-serif;
+    }
+
+    .title {
+      font-size: 14px;
+      font-weight: bold;
+    }
+
+    .window-controls {
+      display: flex;
+      gap: 10px;
+      font-size: 16px;
       user-select: none;
+    }
+
+    .window-controls span {
+      cursor: default;
+    }
+
+    .window-controls span:hover {
+      background-color: #ccc;
+      padding: 0 4px;
     }
 
     .terminal {
       padding: 10px;
       overflow-y: auto;
-      height: calc(100% - 34px);
+      height: calc(100% - 30px);
       white-space: pre-wrap;
     }
 
@@ -45,7 +68,6 @@
       flex-grow: 1;
       caret-color: white;
       color: white;
-      text-transform: none;
     }
 
     .output {
@@ -55,7 +77,15 @@
   </style>
 </head>
 <body>
-  <div class="taskbar">C:\Windows\System32\cmd.exe</div>
+  <div class="taskbar">
+    <div class="title">C:\Windows\System32\cmd.exe</div>
+    <div class="window-controls">
+      <span title="最小化">━</span>
+      <span title="最大化">◻</span>
+      <span title="閉じる" onclick="window.close()">✕</span>
+    </div>
+  </div>
+
   <div class="terminal" id="terminal"></div>
 
   <script>
