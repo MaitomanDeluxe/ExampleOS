@@ -10,23 +10,103 @@
       background: black;
       user-select: none;
       touch-action: none;
+      font-family: sans-serif;
     }
     canvas {
       display: block;
       width: 100vw;
       height: 100vh;
     }
+    #loginBox, #welcomeBox, #hintBox {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      display: none;
+    }
+    #loginBox {
+      top: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      color: white;
+    }
+    #loginBox img {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      margin-bottom: 10px;
+    }
+    #pinInput {
+      padding: 10px;
+      font-size: 20px;
+      width: 200px;
+      border-radius: 10px;
+      border: none;
+      outline: none;
+      text-align: center;
+    }
+    #hintBtn {
+      margin-top: 10px;
+      background: none;
+      border: none;
+      color: #00f;
+      cursor: pointer;
+    }
+    #hintBox {
+      top: 70%;
+      background: rgba(0,0,0,0.8);
+      color: #fff;
+      padding: 10px 20px;
+      border-radius: 10px;
+    }
+    #welcomeBox {
+      top: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      color: white;
+      font-size: 24px;
+    }
+    .circle {
+      width: 10px;
+      height: 10px;
+      margin: 5px;
+      border-radius: 50%;
+      background: white;
+      animation: spin 1.2s linear infinite;
+      display: inline-block;
+    }
+    .circle:nth-child(2) { animation-delay: 0.2s; }
+    .circle:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes spin {
+      0% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.5); opacity: 0.5; }
+      100% { transform: scale(1); opacity: 1; }
+    }
   </style>
 </head>
 <body>
 <canvas id="osCanvas"></canvas>
+<div id="loginBox">
+  <img src="OS.jpeg" alt="User">
+  <div>管理者</div>
+  <input type="password" id="pinInput" maxlength="4" placeholder="PIN (1234)"><br>
+  <button id="hintBtn">ヒント</button>
+</div>
+<div id="hintBox">ｯ忘れんなよ（笑）</div>
+<div id="welcomeBox">
+  <div>ようこそ、管理者 さん</div>
+  <div>
+    <span class="circle"></span>
+    <span class="circle"></span>
+    <span class="circle"></span>
+  </div>
+</div>
 <script>
 const canvas = document.getElementById('osCanvas');
 const ctx = canvas.getContext('2d');
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
-let stage = 'lock'; // lock → login
+let stage = 'lock';
 const bg = new Image();
 bg.src = 'OS.jpeg';
 
@@ -41,9 +121,30 @@ updateTime();
 canvas.addEventListener('click', () => {
   if (stage === 'lock') {
     stage = 'login';
+    document.getElementById('loginBox').style.display = 'block';
     draw();
-  } else if (stage === 'login') {
-    location.href = 'ExampleOS.html'; // ログイン後にページ遷移
+  }
+});
+
+document.getElementById('hintBtn').onclick = () => {
+  document.getElementById('hintBox').style.display = 'block';
+  setTimeout(() => {
+    document.getElementById('hintBox').style.display = 'none';
+  }, 3000);
+};
+
+document.getElementById('pinInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') {
+    if (e.target.value === '1234') {
+      document.getElementById('loginBox').style.display = 'none';
+      document.getElementById('welcomeBox').style.display = 'block';
+      stage = 'welcome';
+      setTimeout(() => {
+        location.href = 'ExampleOS.html';
+      }, 5000 + Math.random() * 2000);
+    } else {
+      e.target.style.border = '2px solid red';
+    }
   }
 });
 
@@ -53,17 +154,15 @@ function draw() {
     ctx.drawImage(bg, 0, 0, canvas.width, canvas.height);
     ctx.fillStyle = '#fff';
     ctx.font = '60px sans-serif';
-    ctx.fillText(timeStr, canvas.width / 2 - 80, 200); // ← ここを調整
+    ctx.fillText(timeStr, canvas.width / 2 - 80, 265);
   } else if (stage === 'login') {
     ctx.drawImage(bg, 0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = 'rgba(0,0,0,0.6)';
+    ctx.fillStyle = 'rgba(0,0,0,0.5)';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = '#fff';
-    ctx.font = '30px sans-serif';
-    ctx.fillText('サインイン ▶', canvas.width / 2 - 80, canvas.height / 2);
   }
 }
 bg.onload = draw;
+setInterval(draw, 1000);
 </script>
 </body>
 </html>
