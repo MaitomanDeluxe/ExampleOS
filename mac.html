@@ -1,22 +1,30 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <title>Mac Terminal</title>
+  <meta charset="UTF-8" />
+  <title>macOS Terminal</title>
   <style>
-    body {
+    html, body {
       margin: 0;
-      background-color: #1e1e1e;
-      color: #ffffff;
+      padding: 0;
+      height: 100%;
+      background: #1e1e1e;
       font-family: Menlo, Monaco, monospace;
-      height: 100vh;
+      color: #ffffff;
+      overflow: hidden;
+    }
+
+    .window {
+      width: 100%;
+      height: 100%;
+      background: #1e1e1e;
       display: flex;
       flex-direction: column;
     }
 
     .titlebar {
-      background-color: #e0e0e0;
       height: 30px;
+      background: #ddd;
       display: flex;
       align-items: center;
       padding: 0 10px;
@@ -24,14 +32,13 @@
 
     .buttons {
       display: flex;
-      gap: 8px;
+      gap: 6px;
     }
 
-    .btn {
+    .button {
       width: 12px;
       height: 12px;
       border-radius: 50%;
-      display: inline-block;
     }
 
     .close { background: #ff5f57; }
@@ -51,43 +58,57 @@
     }
 
     .prompt {
+      color: #00ff00;
       user-select: none;
-      color: #00ff95;
     }
 
     .input {
       outline: none;
       flex-grow: 1;
-      caret-color: #ffffff;
-      color: #ffffff;
+      color: #fff;
+      caret-color: #fff;
+    }
+
+    .input.invalid {
+      color: #ff4444;
     }
 
     .output {
-      white-space: pre-wrap;
       margin-left: 10px;
+      color: #ccc;
+      white-space: pre-wrap;
     }
   </style>
 </head>
 <body>
-  <div class="titlebar">
-    <div class="buttons">
-      <div class="btn close"></div>
-      <div class="btn minimize"></div>
-      <div class="btn zoom"></div>
+  <div class="window">
+    <div class="titlebar">
+      <div class="buttons">
+        <div class="button close"></div>
+        <div class="button minimize"></div>
+        <div class="button zoom"></div>
+      </div>
     </div>
+    <div class="terminal" id="terminal"></div>
   </div>
-  <div class="terminal" id="terminal"></div>
-
   <script>
     const terminal = document.getElementById("terminal");
-    let currentDir = "~";
+    let currentDir = "~/";
+    let history = [];
+    let histIndex = -1;
 
-    function addLine(text, className = "") {
-      const line = document.createElement("div");
-      line.textContent = text;
-      if (className) line.classList.add(className);
-      terminal.appendChild(line);
-    }
+    const commands = {
+      pwd: () => currentDir,
+      clear: () => {
+        terminal.innerHTML = "";
+        return "";
+      },
+      ls: () => "Desktop  Documents  Downloads  Music  Pictures  Public",
+      whoami: () => "macuser",
+      echo: (args) => args.join(" "),
+      help: () => `Available commands:
+pwd, ls, cd, mkdir, clear, whoami, echo, help`,
+    };
 
     function addPrompt() {
       const line = document.createElement("div");
@@ -95,7 +116,7 @@
 
       const prompt = document.createElement("span");
       prompt.className = "prompt";
-      prompt.textContent = `mac@localhost ${currentDir} % `;
+      prompt.textContent = `macuser@macOS ${currentDir}$ `;
 
       const input = document.createElement("span");
       input.className = "input";
@@ -104,12 +125,20 @@
       input.autocapitalize = "off";
       input.autocorrect = "off";
 
-      input.addEventListener("keydown", function(e) {
+      input.addEventListener("keydown", (e) => {
         if (e.key === "Enter") {
           e.preventDefault();
           const cmd = input.textContent.trim();
+          history.push(cmd);
+          histIndex = history.length;
           input.contentEditable = false;
-          runCommand(cmd);
+          handleCommand(cmd);
+        } else if (e.key === "ArrowUp") {
+          e.preventDefault();
+          if (histIndex > 0) input.textContent = history[--histIndex];
+        } else if (e.key === "ArrowDown") {
+          e.preventDefault();
+          if (histIndex < history.length - 1) input.textContent = history[++histIndex];
         }
       });
 
@@ -120,33 +149,25 @@
       terminal.scrollTop = terminal.scrollHeight;
     }
 
-    function runCommand(cmd) {
-      const output = document.createElement("div");
-      output.className = "output";
+    function handleCommand(text) {
+      const out = document.createElement("div");
+      out.className = "output";
+      const parts = text.split(/\s+/);
+      const cmd = parts[0];
+      const args = parts.slice(1);
 
-      switch (cmd) {
-        case "ls":
-          output.textContent = "Desktop  Documents  Downloads  Music  Pictures  Public";
-          break;
-        case "clear":
-          terminal.innerHTML = '';
-          addPrompt();
-          return;
-        case "pwd":
-          output.textContent = `/Users/mac`;
-          break;
-        case "exit":
-          output.textContent = "ログアウト";
-          break;
-        default:
-          output.textContent = `zsh: command not found: ${cmd}`;
+      if (commands[cmd]) {
+        const result = commands[cmd](args);
+        if (result !== "") out.textContent = result;
+      } else {
+        out.textContent = `${cmd}: command not found`;
       }
 
-      terminal.appendChild(output);
+      terminal.appendChild(out);
       addPrompt();
     }
 
-    addLine("Last login: " + new Date().toLocaleString());
+    // 初期起動
     addPrompt();
   </script>
 </body>
