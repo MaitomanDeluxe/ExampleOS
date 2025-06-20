@@ -1,120 +1,77 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>仮想ターミナルOS（iOS対応）</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>設定</title>
   <style>
-    html, body {
+    body {
       margin: 0;
-      background-color: #1e1e1e;
-      font-family: monospace;
-      height: 100vh;
-      overflow: hidden;
-      user-select: none;
-      -webkit-user-select: none;
-      touch-action: none;
+      font-family: 'Segoe UI', sans-serif;
+      background: #f0f0f0;
+      color: #333;
     }
-    .window {
-      position: absolute;
-      width: 600px;
-      height: 400px;
-      background: #000;
-      border: 1px solid #666;
-      box-shadow: 0 0 10px rgba(0, 0, 0, 0.6);
+    h1 {
+      text-align: center;
+      margin: 20px 0;
+    }
+    .section {
+      margin: 20px;
+    }
+    .grid {
       display: flex;
-      flex-direction: column;
-      z-index: 1;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
     }
-    .handle {
-      height: 30px;
-      background-color: #222;
-      color: white;
-      font-weight: bold;
-      display: flex;
-      align-items: center;
-      padding-left: 10px;
-      touch-action: none;
-      cursor: move;
-      user-select: none;
-      -webkit-user-select: none;
+    .preview {
+      width: 150px;
+      height: 100px;
+      border: 2px solid #ccc;
+      cursor: pointer;
+      background-size: cover;
+      background-position: center;
     }
-    iframe {
-      border: none;
-      width: 100%;
-      height: 100%;
-      flex-grow: 1;
-    }
-    .taskbar {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
+    .color-button {
+      width: 80px;
       height: 40px;
-      background: #333;
-      display: flex;
-      align-items: center;
-      padding: 0 10px;
-      box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.5);
-      z-index: 1000;
-    }
-    .taskbar span {
-      color: #fff;
-      font-weight: bold;
+      border: none;
+      margin: 5px;
+      cursor: pointer;
+      border-radius: 4px;
     }
   </style>
 </head>
 <body>
-  <!-- Ubuntu Terminal Only -->
-  <div class="window" style="top: 100px; left: 100px;">
-    <div class="handle">Ubuntu Terminal</div>
-    <iframe src="ETerminal.html"></iframe>
+  <h1>設定</h1>
+
+  <div class="section">
+    <h2>背景の選択</h2>
+    <div class="grid">
+      <div class="preview" style="background-image: url('../Images/back1.png')" onclick="setBackground('Images/back1.png')"></div>
+      <div class="preview" style="background-image: url('../Images/back2.png')" onclick="setBackground('Images/back2.png')"></div>
+      <div class="preview" style="background-image: url('../Images/back3.png')" onclick="setBackground('Images/back3.png')"></div>
+      <div class="preview" style="background-image: url('../Images/back4.png')" onclick="setBackground('Images/back4.png')"></div>
+    </div>
   </div>
 
-  <div class="taskbar">
-    <span>Terminal: Ubuntu</span>
+  <div class="section">
+    <h2>タスクバーの色</h2>
+    <div class="grid">
+      <button class="color-button" style="background-color: #333;" onclick="setTaskbarColor('#333')"></button>
+      <button class="color-button" style="background-color: #005f73;" onclick="setTaskbarColor('#005f73')"></button>
+      <button class="color-button" style="background-color: #6a0dad;" onclick="setTaskbarColor('#6a0dad')"></button>
+      <button class="color-button" style="background-color: #008080;" onclick="setTaskbarColor('#008080')"></button>
+    </div>
   </div>
 
   <script>
-    let dragTarget = null, offsetX = 0, offsetY = 0;
-
-    document.querySelectorAll('.handle').forEach(handle => {
-      const win = handle.parentElement;
-
-      handle.addEventListener('mousedown', e => {
-        dragTarget = win;
-        offsetX = e.clientX - win.offsetLeft;
-        offsetY = e.clientY - win.offsetTop;
-      });
-
-      handle.addEventListener('touchstart', e => {
-        const touch = e.touches[0];
-        dragTarget = win;
-        offsetX = touch.clientX - win.offsetLeft;
-        offsetY = touch.clientY - win.offsetTop;
-        e.preventDefault();
-      }, { passive: false });
-    });
-
-    document.addEventListener('mousemove', e => {
-      if (dragTarget) {
-        dragTarget.style.left = (e.clientX - offsetX) + 'px';
-        dragTarget.style.top = (e.clientY - offsetY) + 'px';
-      }
-    });
-
-    document.addEventListener('mouseup', () => dragTarget = null);
-
-    document.addEventListener('touchmove', e => {
-      if (dragTarget) {
-        const touch = e.touches[0];
-        dragTarget.style.left = (touch.clientX - offsetX) + 'px';
-        dragTarget.style.top = (touch.clientY - offsetY) + 'px';
-        e.preventDefault();
-      }
-    }, { passive: false });
-
-    document.addEventListener('touchend', () => dragTarget = null);
+    function setBackground(path) {
+      parent.postMessage({ type: 'setBackground', value: path }, '*');
+    }
+    function setTaskbarColor(color) {
+      parent.postMessage({ type: 'setTaskbarColor', value: color }, '*');
+    }
   </script>
 </body>
 </html>
