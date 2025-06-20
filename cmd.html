@@ -14,40 +14,20 @@
       overflow: hidden;
     }
 
-    .title-bar {
-      background-color: #000080;
-      color: white;
-      height: 30px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0 10px;
-      font-family: sans-serif;
-      user-select: none;
-    }
-
-    .title {
+    .taskbar {
+      background-color: white;
+      color: black;
+      padding: 6px 10px;
       font-weight: bold;
-    }
-
-    .window-controls button {
-      background: none;
-      border: none;
-      color: white;
       font-size: 14px;
-      width: 30px;
-      height: 30px;
-      cursor: pointer;
-    }
-
-    .window-controls button:hover {
-      background-color: #444;
+      font-family: "Segoe UI", sans-serif;
+      user-select: none;
     }
 
     .terminal {
       padding: 10px;
       overflow-y: auto;
-      height: calc(100% - 30px);
+      height: calc(100% - 34px);
       white-space: pre-wrap;
     }
 
@@ -64,75 +44,26 @@
       outline: none;
       flex-grow: 1;
       caret-color: white;
-      color: #ffff66;
+      color: white;
       text-transform: none;
-    }
-
-    .input.invalid {
-      color: #ff4444;
     }
 
     .output {
       white-space: pre-wrap;
       margin-left: 10px;
-      color: white;
     }
   </style>
 </head>
 <body>
-  <div class="title-bar">
-    <div class="title">C:\Windows\System32\cmd.exe</div>
-    <div class="window-controls">
-      <button onclick="minimizeTerminal()">ー</button>
-      <button onclick="toggleMaximize()">□</button>
-      <button onclick="window.close()">×</button>
-    </div>
-  </div>
-
+  <div class="taskbar">C:\Windows\System32\cmd.exe</div>
   <div class="terminal" id="terminal"></div>
 
   <script>
     const terminal = document.getElementById("terminal");
-    let currentDir = "C:\\Users\\127.0.0.1";
-    let isMinimized = false;
-    let isMaximized = false;
-
-    fetch("https://api.ipify.org?format=json").then(res => res.json()).then(data => {
-      currentDir = "C:\\Users\\" + data.ip;
-      updatePromptTexts();
-    });
-
+    let currentDir = "C:\\";
     let fileSystem = {
-      "C:\\": {
-        type: "dir", children: {
-          "Users\\": {
-            type: "dir", children: {
-              "127.0.0.1\\": { type: "dir", children: {} }
-            }
-          }
-        }
-      }
+      "C:\\": { type: "dir", children: { "Users\\": { type: "dir", children: {} } } }
     };
-
-    function updatePromptTexts() {
-      document.querySelectorAll(".prompt").forEach(p => {
-        p.textContent = `${currentDir}> `;
-      });
-    }
-
-    function minimizeTerminal() {
-      terminal.style.display = isMinimized ? "block" : "none";
-      isMinimized = !isMinimized;
-    }
-
-    function toggleMaximize() {
-      if (!isMaximized) {
-        document.documentElement.requestFullscreen().catch(() => {});
-      } else {
-        document.exitFullscreen().catch(() => {});
-      }
-      isMaximized = !isMaximized;
-    }
 
     function addLine(text, className = "") {
       const line = document.createElement("div");
@@ -141,7 +72,7 @@
       terminal.appendChild(line);
     }
 
-    function addPrompt() {
+    function addNewPrompt() {
       const line = document.createElement("div");
       line.className = "line";
 
@@ -173,12 +104,13 @@
     }
 
     function resolvePath(path) {
-      return currentDir + "\\" + path + (path.endsWith("\\") ? "" : "\\");
+      return currentDir + path + (path.endsWith("\\") ? "" : "\\");
     }
 
     function runCommand(input) {
       const args = input.split(/\s+/);
       const cmd = args.shift().toLowerCase();
+
       const out = document.createElement("div");
       out.className = "output";
 
@@ -188,8 +120,8 @@
           break;
 
         case "dir": {
-          const dir = fileSystem[currentDir + "\\"] || fileSystem[currentDir];
-          out.textContent = dir?.children ? Object.keys(dir.children).join("\n") : "ファイルが見つかりません";
+          const dir = fileSystem[currentDir];
+          out.textContent = Object.keys(dir.children).join("\n") || "ファイルが見つかりません";
           break;
         }
 
@@ -197,7 +129,7 @@
           const path = args[0];
           const target = resolvePath(path);
           if (fileSystem[target] && fileSystem[target].type === "dir") {
-            currentDir = target.endsWith("\\") ? target.slice(0, -1) : target;
+            currentDir = target;
           } else {
             out.textContent = "指定されたパスが見つかりません";
           }
@@ -208,10 +140,7 @@
           const name = args[0];
           const newPath = resolvePath(name);
           fileSystem[newPath] = { type: "dir", children: {} };
-          const parent = fileSystem[currentDir + "\\"];
-          if (parent?.children) {
-            parent.children[name + "\\"] = fileSystem[newPath];
-          }
+          fileSystem[currentDir].children[name + "\\"] = fileSystem[newPath];
           out.textContent = `ディレクトリを作成しました: ${name}`;
           break;
         }
@@ -221,19 +150,15 @@
           const target = resolvePath(name);
           if (fileSystem[target]) {
             delete fileSystem[target];
-            if (fileSystem[currentDir + "\\"].children[name + "\\"]) {
-              delete fileSystem[currentDir + "\\"].children[name + "\\"];
-            }
+            delete fileSystem[currentDir].children[name + "\\"];
             out.textContent = `${name} を削除しました。`;
-          } else {
-            out.textContent = `ディレクトリが見つかりません: ${name}`;
-          }
+          } else out.textContent = `ディレクトリが見つかりません: ${name}`;
           break;
         }
 
         case "cls":
           terminal.innerHTML = "";
-          addPrompt();
+          addNewPrompt();
           return;
 
         case "echo":
@@ -242,14 +167,16 @@
 
         case "exit":
           out.textContent = "終了します...";
-          terminal.appendChild(out);
-          setTimeout(() => window.close(), 500);
-          return;
+          break;
 
         case "type": {
           const name = args[0];
           const path = resolvePath(name);
-          out.textContent = fileSystem[path]?.type === "file" ? fileSystem[path].content : `ファイルが見つかりません: ${name}`;
+          if (fileSystem[path] && fileSystem[path].type === "file") {
+            out.textContent = fileSystem[path].content;
+          } else {
+            out.textContent = `ファイルが見つかりません: ${name}`;
+          }
           break;
         }
 
@@ -258,12 +185,12 @@
       }
 
       terminal.appendChild(out);
-      addPrompt();
+      addNewPrompt();
     }
 
     addLine("Microsoft Windows [Version 10.0.19045.3448]");
     addLine("(c) Microsoft Corporation. All rights reserved.\n");
-    addPrompt();
+    addNewPrompt();
   </script>
 </body>
 </html>
