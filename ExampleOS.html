@@ -10,6 +10,7 @@
       font-family: monospace;
       overflow: hidden;
     }
+
     .window {
       position: absolute;
       width: 600px;
@@ -21,28 +22,7 @@
       flex-direction: column;
       resize: both;
       overflow: hidden;
-    }
-
-    .title-bar {
-      height: 30px;
-      background: #ccc;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 0 10px;
-      cursor: move;
-      font-weight: bold;
-      user-select: none;
-    }
-
-    .title-bar.cmd    { background-color: #000; color: #0f0; }
-    .title-bar.ps     { background-color: #012456; color: #00bfff; }
-    .title-bar.linux  { background-color: #222; color: #0f0; }
-    .title-bar.mac    { background-color: #444; color: #fff; }
-
-    .controls span {
-      margin-left: 10px;
-      cursor: pointer;
+      cursor: move; /* ←ドラッグっぽい見た目に */
     }
 
     iframe {
@@ -56,37 +36,34 @@
 <body>
   <!-- Cmd -->
   <div class="window" style="top: 20px; left: 20px;">
-    <div class="title-bar cmd">Cmd.exe</div>
     <iframe src="cmd.html"></iframe>
   </div>
 
   <!-- PowerShell -->
   <div class="window" style="top: 40px; left: 650px;">
-    <div class="title-bar ps">PowerShell</div>
     <iframe src="shell.html"></iframe>
   </div>
 
   <!-- Linux -->
   <div class="window" style="top: 460px; left: 20px;">
-    <div class="title-bar linux">Linux Terminal</div>
     <iframe src="linux.html"></iframe>
   </div>
 
   <!-- Mac -->
   <div class="window" style="top: 460px; left: 650px;">
-    <div class="title-bar mac">Mac Terminal</div>
     <iframe src="mac.html"></iframe>
   </div>
 
   <script>
-    // ウィンドウ移動ロジック
     let dragTarget = null, offsetX = 0, offsetY = 0;
 
-    document.querySelectorAll('.title-bar').forEach(bar => {
-      bar.addEventListener('mousedown', e => {
-        dragTarget = bar.parentElement;
-        offsetX = e.clientX - dragTarget.offsetLeft;
-        offsetY = e.clientY - dragTarget.offsetTop;
+    document.querySelectorAll('.window').forEach(win => {
+      win.addEventListener('mousedown', e => {
+        if (e.target.tagName !== 'IFRAME') { // iframeは無視
+          dragTarget = win;
+          offsetX = e.clientX - win.offsetLeft;
+          offsetY = e.clientY - win.offsetTop;
+        }
       });
     });
 
@@ -97,7 +74,9 @@
       }
     });
 
-    document.addEventListener('mouseup', () => dragTarget = null);
+    document.addEventListener('mouseup', () => {
+      dragTarget = null;
+    });
   </script>
 </body>
 </html>
