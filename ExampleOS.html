@@ -27,13 +27,27 @@
       resize: both;
       overflow: hidden;
       z-index: 1;
+    }
+    .title-bar {
+      height: 30px;
+      background: #444;
+      color: #fff;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 10px;
       cursor: move;
+      user-select: none;
+      font-weight: bold;
+    }
+    .iframe-container {
+      flex-grow: 1;
+      display: flex;
     }
     iframe {
       border: none;
       width: 100%;
       height: 100%;
-      flex-grow: 1;
     }
     .taskbar {
       position: fixed;
@@ -48,9 +62,23 @@
       box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.5);
       z-index: 1000;
     }
-    .taskbar span {
-      color: #fff;
+    .taskbar button {
+      margin-right: 10px;
+      padding: 6px 12px;
+      font-size: 14px;
       font-weight: bold;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      background-color: #444;
+      color: #fff;
+      transition: background 0.2s;
+    }
+    .taskbar button:hover {
+      background-color: #666;
+    }
+    .hidden {
+      display: none !important;
     }
     #runPrompt {
       position: absolute;
@@ -87,23 +115,26 @@
     #fileButton:hover {
       background: #666;
     }
-    .hidden {
-      display: none !important;
-    }
   </style>
 </head>
 <body style="background-image: url('Images/back1.png'); background-size: cover;">
-  <div id="linux" class="window" style="top: 460px; left: 20px;">
-    <iframe src="ETerminal.html"></iframe>
-  </div>
-
+  <!-- タスクバー -->
   <div class="taskbar" id="taskbar">
-    <span>Terminal: Ubuntu</span>
+    <button onclick="openSetting()">設定</button>
   </div>
 
+  <!-- ETerminal（初期は非表示） -->
+  <div id="linux" class="window hidden" style="top: 460px; left: 20px;">
+    <div class="title-bar">Ubuntu</div>
+    <div class="iframe-container">
+      <iframe src="ETerminal.html"></iframe>
+    </div>
+  </div>
+
+  <!-- 実行プロンプト -->
   <div id="runPrompt">
     <h3>ファイル名を指定して実行</h3>
-    <input type="text" id="runInput" placeholder="Terminals/cmd.html">
+    <input type="text" id="runInput" placeholder="ファイル名またはパスを入力...">
     <button id="fileButton">📁</button>
     <input type="file" id="fileLoader" accept=".html" style="display:none">
   </div>
@@ -111,24 +142,26 @@
   <script>
     let dragTarget = null, offsetX = 0, offsetY = 0;
 
-    document.querySelectorAll('.window').forEach(win => {
-      win.addEventListener('mousedown', e => {
-        if (e.target.tagName !== 'IFRAME') {
-          dragTarget = win;
-          bringToFront(win);
-          offsetX = e.clientX - win.offsetLeft;
-          offsetY = e.clientY - win.offsetTop;
-        }
+    function makeDraggable(win) {
+      const bar = win.querySelector('.title-bar');
+      bar.addEventListener('mousedown', e => {
+        dragTarget = win;
+        bringToFront(win);
+        offsetX = e.clientX - win.offsetLeft;
+        offsetY = e.clientY - win.offsetTop;
       });
-
-      win.addEventListener('touchstart', e => {
+      bar.addEventListener('touchstart', e => {
         const touch = e.touches[0];
         dragTarget = win;
         bringToFront(win);
         offsetX = touch.clientX - win.offsetLeft;
         offsetY = touch.clientY - win.offsetTop;
       });
-    });
+    }
+
+    function bringToFront(el) {
+      el.style.zIndex = Date.now();
+    }
 
     document.addEventListener('mousemove', e => {
       if (dragTarget) {
@@ -147,18 +180,15 @@
       }
     });
 
-    let topZ = 3;
-    function bringToFront(el) {
-      el.style.zIndex = topZ++;
-    }
-
     document.addEventListener('keydown', e => {
       if (e.shiftKey && e.code === 'KeyR') {
         e.preventDefault();
         const prompt = document.getElementById('runPrompt');
         prompt.style.display = 'block';
-        document.getElementById('runInput').value = '';
-        document.getElementById('runInput').focus();
+        const input = document.getElementById('runInput');
+        input.value = '';
+        input.placeholder = 'ファイル名またはパスを入力...';
+        input.focus();
       } else if (e.key === 'Escape') {
         document.getElementById('runPrompt').style.display = 'none';
       }
@@ -167,37 +197,21 @@
     document.getElementById('runInput').addEventListener('keydown', e => {
       if (e.key === 'Enter') {
         const path = e.target.value.trim();
-        if (path.endsWith('.html')) {
+        if (path.toLowerCase() === 'terminal') {
+          document.getElementById('linux').classList.remove('hidden');
+        } else if (path.endsWith('.html')) {
           const win = document.createElement('div');
           win.className = 'window';
           win.style.top = '100px';
           win.style.left = '100px';
-          win.innerHTML = `<iframe src="${path}"></iframe>`;
+          win.innerHTML = `<div class="title-bar">${path}</div><div class="iframe-container"><iframe src="${path}"></iframe></div>`;
           document.body.appendChild(win);
           makeDraggable(win);
           bringToFront(win);
-          document.getElementById('runPrompt').style.display = 'none';
         }
+        document.getElementById('runPrompt').style.display = 'none';
       }
     });
-
-    function makeDraggable(win) {
-      win.addEventListener('mousedown', e => {
-        if (e.target.tagName !== 'IFRAME') {
-          dragTarget = win;
-          bringToFront(win);
-          offsetX = e.clientX - win.offsetLeft;
-          offsetY = e.clientY - win.offsetTop;
-        }
-      });
-      win.addEventListener('touchstart', e => {
-        const touch = e.touches[0];
-        dragTarget = win;
-        bringToFront(win);
-        offsetX = touch.clientX - win.offsetLeft;
-        offsetY = touch.clientY - win.offsetTop;
-      });
-    }
 
     document.getElementById('fileButton').addEventListener('click', () => {
       document.getElementById('fileLoader').click();
@@ -212,17 +226,27 @@
           win.className = 'window';
           win.style.top = '120px';
           win.style.left = '120px';
-          win.innerHTML = `<iframe srcdoc="${evt.target.result}"></iframe>`;
+          win.innerHTML = `<div class="title-bar">${file.name}</div><div class="iframe-container"><iframe srcdoc="${evt.target.result}"></iframe></div>`;
           document.body.appendChild(win);
           makeDraggable(win);
           bringToFront(win);
-          document.getElementById('runPrompt').style.display = 'none';
         };
         reader.readAsText(file);
+        document.getElementById('runPrompt').style.display = 'none';
       }
     });
 
-    // 外部から設定反映
+    function openSetting() {
+      const win = document.createElement('div');
+      win.className = 'window';
+      win.style.top = '150px';
+      win.style.left = '150px';
+      win.innerHTML = `<div class="title-bar">設定</div><div class="iframe-container"><iframe src="Apps/setting.html"></iframe></div>`;
+      document.body.appendChild(win);
+      makeDraggable(win);
+      bringToFront(win);
+    }
+
     window.addEventListener('message', e => {
       if (e.data.type === 'setBackground') {
         document.body.style.backgroundImage = `url('${e.data.value}')`;
