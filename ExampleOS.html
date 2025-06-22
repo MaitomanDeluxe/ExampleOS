@@ -118,12 +118,10 @@
   </style>
 </head>
 <body style="background-image: url('Images/back1.png'); background-size: cover;">
-  <!-- タスクバー -->
   <div class="taskbar" id="taskbar">
     <button onclick="openSetting()">設定</button>
   </div>
 
-  <!-- ETerminal（初期は非表示） -->
   <div id="linux" class="window hidden" style="top: 460px; left: 20px;">
     <div class="title-bar">Ubuntu</div>
     <div class="iframe-container">
@@ -131,7 +129,6 @@
     </div>
   </div>
 
-  <!-- 実行プロンプト -->
   <div id="runPrompt">
     <h3>ファイル名を指定して実行</h3>
     <input type="text" id="runInput" placeholder="ファイル名またはパスを入力...">
@@ -196,18 +193,13 @@
 
     document.getElementById('runInput').addEventListener('keydown', e => {
       if (e.key === 'Enter') {
-        const path = e.target.value.trim();
-        if (path.toLowerCase() === 'terminal') {
+        const path = e.target.value.trim().toLowerCase();
+        if (path === 'terminal') {
           document.getElementById('linux').classList.remove('hidden');
+        } else if (path === 'notepad') {
+          openWindow('Apps/notepad.html', 'メモ帳');
         } else if (path.endsWith('.html')) {
-          const win = document.createElement('div');
-          win.className = 'window';
-          win.style.top = '100px';
-          win.style.left = '100px';
-          win.innerHTML = `<div class="title-bar">${path}</div><div class="iframe-container"><iframe src="${path}"></iframe></div>`;
-          document.body.appendChild(win);
-          makeDraggable(win);
-          bringToFront(win);
+          openWindow(path, path);
         }
         document.getElementById('runPrompt').style.display = 'none';
       }
@@ -222,14 +214,7 @@
       if (file && file.name.endsWith('.html')) {
         const reader = new FileReader();
         reader.onload = function(evt) {
-          const win = document.createElement('div');
-          win.className = 'window';
-          win.style.top = '120px';
-          win.style.left = '120px';
-          win.innerHTML = `<div class="title-bar">${file.name}</div><div class="iframe-container"><iframe srcdoc="${evt.target.result}"></iframe></div>`;
-          document.body.appendChild(win);
-          makeDraggable(win);
-          bringToFront(win);
+          openWindowURL(evt.target.result, file.name, true);
         };
         reader.readAsText(file);
         document.getElementById('runPrompt').style.display = 'none';
@@ -237,11 +222,26 @@
     });
 
     function openSetting() {
+      openWindow('Apps/setting.html', '設定');
+    }
+
+    function openWindow(url, title) {
       const win = document.createElement('div');
       win.className = 'window';
       win.style.top = '150px';
       win.style.left = '150px';
-      win.innerHTML = `<div class="title-bar">設定</div><div class="iframe-container"><iframe src="Apps/setting.html"></iframe></div>`;
+      win.innerHTML = `<div class="title-bar">${title}</div><div class="iframe-container"><iframe src="${url}"></iframe></div>`;
+      document.body.appendChild(win);
+      makeDraggable(win);
+      bringToFront(win);
+    }
+
+    function openWindowURL(content, title, useSrcdoc = false) {
+      const win = document.createElement('div');
+      win.className = 'window';
+      win.style.top = '150px';
+      win.style.left = '150px';
+      win.innerHTML = `<div class="title-bar">${title}</div><div class="iframe-container"><iframe ${useSrcdoc ? `srcdoc="${content}"` : `src="${content}"`}></iframe></div>`;
       document.body.appendChild(win);
       makeDraggable(win);
       bringToFront(win);
