@@ -14,25 +14,11 @@
       overflow: hidden;
     }
 
-    .title-bar {
-      background-color: #f0f0f0;
-      height: 30px;
-      display: flex;
-      align-items: center;
-      padding: 0 6px;
-      border-bottom: 1px solid #ccc;
-    }
+    /* Removed .title-bar styling */
 
-    .title-left {
-      display: flex;
-      align-items: center;
-    }
+    /* Removed .title-left styling */
 
-    .title-left img {
-      width: 16px;
-      height: 16px;
-      margin-right: 6px;
-    }
+    /* Removed .title-left img styling */
 
     .menu-bar {
       background-color: white;
@@ -78,7 +64,8 @@
 
     textarea {
       width: 100%;
-      height: calc(100% - 55px);
+      /* Adjusted height: 100% - height of menu-bar */
+      height: calc(100% - 25px);
       border: none;
       resize: none;
       padding: 6px;
@@ -92,13 +79,6 @@
   </style>
 </head>
 <body>
-  <div class="title-bar">
-    <div class="title-left">
-      <img src="notepad.png" alt="Notepad Icon">
-      <span id="window-title">無題 - メモ帳</span>
-    </div>
-  </div>
-
   <div class="menu-bar">
     <div class="menu">ファイル(F)
       <div class="dropdown">
@@ -135,12 +115,14 @@
 
   <script>
     const textarea = document.getElementById("notepad");
-    const title = document.getElementById("window-title");
+    // const title = document.getElementById("window-title"); // This element no longer exists
     let changed = false;
 
     textarea.addEventListener("input", () => {
+      // Since there's no title bar, the "*" indicator won't be displayed.
+      // You might consider another way to indicate changes if needed.
       if (!changed) {
-        title.textContent = "*" + title.textContent;
+        // title.textContent = "*" + title.textContent; // This line will cause an error if `title` is null
         changed = true;
       }
     });
@@ -148,7 +130,7 @@
     function newFile() {
       if (changed && !confirm("変更内容を破棄して新規作成しますか？")) return;
       textarea.value = "";
-      title.textContent = "無題 - メモ帳";
+      // title.textContent = "無題 - メモ帳"; // This line will cause an error
       changed = false;
     }
 
@@ -160,7 +142,7 @@
       a.download = "メモ.txt";
       a.click();
       URL.revokeObjectURL(url);
-      title.textContent = "メモ.txt - メモ帳";
+      // title.textContent = "メモ.txt - メモ帳"; // This line will cause an error
       changed = false;
     }
 
