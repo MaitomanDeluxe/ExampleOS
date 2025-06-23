@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Win11風ペイントアプリ</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background-color: #f3f3f3;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+        .toolbar {
+            background-color: #ffffff;
+            padding: 10px;
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .toolbar button, .toolbar select {
+            padding: 8px 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.2s;
+        }
+        .toolbar button:hover, .toolbar select:hover {
+            background-color: #e0e0e0;
+        }
+        .toolbar button.active {
+            background-color: #0078d4;
+            color: white;
+        }
+        .color-picker {
+            width: 40px;
+            height: 40px;
+            padding: 0;
+            border: none;
+            cursor: pointer;
+        }
+        .canvas-container {
+            flex: 1;
+            display: flex;
+            position: relative;
+            margin: 10px;
+        }
+        #canvas {
+            background-color: white;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        .layer-panel {
+            width: 200px;
+            background-color: #ffffff;
+            border-left: 1px solid #e0e0e0;
+            padding: 10px;
+            box-shadow: -2px 0 4px rgba(0, 0, 0, 0.1);
+        }
+        .layer-panel h3 {
+            margin: 0 0 10px;
+            font-size: 14px;
+        }
+        .layer-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px;
+            border-bottom: 1px solid #e0e0e0;
+            cursor: pointer;
+        }
+        .layer-item.active {
+            background-color: #e0e0e0;
+        }
+        .layer-item button {
+            background: none;
+            border: none;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="toolbar">
+        <button id="penTool" class="active">ペン</button>
+        <button id="eraserTool">消しゴム</button>
+        <button id="lineTool">直線</button>
+        <button id="rectTool">四角</button>
+        <button id="circleTool">円</button>
+        <input type="color" id="colorPicker" class="color-picker" value="#000000">
+        <input type="range" id="brushSize" min="1" max="50" value="5">
+        <span>太さ: <span id="sizeValue">5</span>px</span>
+        <button id="undo">元に戻す</button>
+        <button id="redo">やり直す</button>
+        <button id="addLayer">レイヤー追加</button>
+        <button id="saveCanvas">保存</button>
+        <button id="clearCanvas">クリア</button>
+        <select id="layerSelect"></select>
+    </div>
+    <div class="canvas-container">
+        <canvas id="canvas"></canvas>
+        <div class="layer-panel">
+            <h3>レイヤー</h3>
+            <div id="layerList"></div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const penTool = document.getElementById('penTool');
+        const eraserTool = document.getElementById('eraserTool');
+        const lineTool = document.getElementById('lineTool');
+        const rectTool = document.getElementById('rectTool');
+        const circleTool = document.getElementById('circleTool');
+        const colorPicker = document.getElementById('colorPicker');
+        const brushSize = document.getElementById('brushSize');
+        const sizeValue = document.getElementById('sizeValue');
+        const undoBtn = document.getElementById('undo');
+        const redoBtn = document.getElementById('redo');
+        const addLayerBtn = document.getElementById('addLayer');
+        const saveCanvas = document.getElementById('saveCanvas');
+        const clearCanvas = document.getElementById('clearCanvas');
+        const layerSelect = document.getElementById('layerSelect');
+        const layerList = document.getElementById('layerList');
+
+        let isDrawing = false;
+        let currentTool = 'pen';
+        let startX, startY;
+        let layers = [];
+        let currentLayer = 0;
+        let history = [];
+        let redoStack = [];
+        let layerCanvases = [];
+
+        // キャンバスサイズ設定
+        function resizeCanvas() {
+            canvas.width = window.innerWidth - 230;
+            canvas.height = window.innerHeight - 60;
+            layers.forEach(layer => {
+                layer.canvas.width = canvas.width;
+                layer.canvas.height = canvas.height;
+            });
+            redraw();
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        // レイヤー管理
+        function addLayer() {
+            const layerCanvas = document.createElement('canvas');
+            layerCanvas.width = canvas.width;
+            layerCanvas.height = canvas.height;
+            const layerCtx = layerCanvas.getContext('2d');
+            layerCtx.fillStyle = 'white';
+            layerCtx.fillRect(0, 0, layerCanvas.width, layerCanvas.height);
+            layers.push({ canvas: layerCanvas, ctx: layerCtx, name: `レイヤー${layers.length + 1}` });
+            layerCanvases.push(layerCanvas);
+            currentLayer = layers.length - 1;
+            updateLayerUI();
+            saveState();
+        }
+
+        function updateLayerUI() {
+            layerSelect.innerHTML = '';
+            layerList.innerHTML = '';
+            layers.forEach((layer, index) => {
+                const option = document.createElement('option');
+                option.value = index;
+                option.textContent = layer.name;
+                layerSelect.appendChild(option);
+
+                const layerItem = document.createElement('div');
+                layerItem.className = 'layer-item';
+                layerItem.classList.toggle('active', index === currentLayer);
+                layerItem.innerHTML = `
+                    ${layer.name}
+                    <button onclick="deleteLayer(${index})">削除</button>
+                `;
+                layerItem.addEventListener('click', () => {
+                    currentLayer = index;
+                    layerSelect.value = index;
+                    updateLayerUI();
+                    redraw();
+                });
+                layerList.appendChild(layerItem);
+            });
+            layerSelect.value = currentLayer;
+        }
+
+        function deleteLayer(index) {
+            if (layers.length > 1) {
+                layers.splice(index, 1);
+                layerCanvases.splice(index, 1);
+                if (currentLayer >= layers.length) currentLayer = layers.length - 1;
+                updateLayerUI();
+                saveState();
+                redraw();
+            }
+        }
+
+        // 初期レイヤー
+        addLayer();
+
+        // ツール切り替え
+        [penTool, eraserTool, lineTool, rectTool, circleTool].forEach(tool => {
+            tool.addEventListener('click', () => {
+                currentTool = tool.id.replace('Tool', '');
+                [penTool, eraserTool, lineTool, rectTool, circleTool].forEach(btn => btn.classList.remove('active'));
+                tool.classList.add('active');
+            });
+        });
+
+        // ブラシサイズ変更
+        brushSize.addEventListener('input', () => {
+            sizeValue.textContent = brushSize.value;
+        });
+
+        // Undo/Redo
+        function saveState() {
+            const state = layerCanvases.map(c => c.toDataURL());
+            history.push(state);
+            redoStack = [];
+            if (history.length > 50) history.shift();
+        }
+
+        undoBtn.addEventListener('click', () => {
+            if (history.length > 1) {
+                redoStack.push(history.pop());
+                const state = history[history.length - 1];
+                layers.forEach((layer, i) => {
+                    const img = new Image();
+                    img.src = state[i];
+                    img.onload = () => {
+                        layer.ctx.clearRect(0, 0, layer.canvas.width, layer.canvas.height);
+                        layer.ctx.drawImage(img, 0, 0);
+                        redraw();
+                    };
+                });
+            }
+        });
+
+        redoBtn.addEventListener('click', () => {
+            if (redoStack.length > 0) {
+                const state = redoStack.pop();
+                history.push(state);
+                layers.forEach((layer, i) => {
+                    const img = new Image();
+                    img.src = state[i];
+                    img.onload = () => {
+                        layer.ctx.clearRect(0, 0, layer.canvas.width, layer.canvas.height);
+                        layer.ctx.drawImage(img, 0, 0);
+                        redraw();
+                    };
+                });
+            }
+        });
+
+        // キャンバスクリア
+        clearCanvas.addEventListener('click', () => {
+            layers[currentLayer].ctx.fillStyle = 'white';
+            layers[currentLayer].ctx.fillRect(0, 0, canvas.width, canvas.height);
+            saveState();
+            redraw();
+        });
+
+        // 保存
+        saveCanvas.addEventListener('click', () => {
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = canvas.width;
+            tempCanvas.height = canvas.height;
+            const tempCtx = tempCanvas.getContext('2d');
+            layers.forEach(layer => tempCtx.drawImage(layer.canvas, 0, 0));
+            const link = document.createElement('a');
+            link.download = 'painting.png';
+            link.href = tempCanvas.toDataURL('image/png');
+            link.click();
+        });
+
+        // レイヤー追加
+        addLayerBtn.addEventListener('click', addLayer);
+
+        // 描画処理
+        canvas.addEventListener('mousedown', startDrawing);
+        canvas.addEventListener('mousemove', draw);
+        canvas.addEventListener('mouseup', stopDrawing);
+        canvas.addEventListener('mouseout', stopDrawing);
+        canvas.addEventListener('touchstart', handleTouch);
+        canvas.addEventListener('touchmove', handleTouch);
+        canvas.addEventListener('touchend', stopDrawing);
+
+        function startDrawing(e) {
+            isDrawing = true;
+            const rect = canvas.getBoundingClientRect();
+            startX = e.clientX - rect.left;
+            startY = e.clientY - rect.top;
+            if (currentTool === 'pen' || currentTool === 'eraser') {
+                layers[currentLayer].ctx.beginPath();
+                layers[currentLayer].ctx.moveTo(startX, startY);
+            }
+        }
+
+        function stopDrawing() {
+            isDrawing = false;
+            layers[currentLayer].ctx.beginPath();
+            if (['line', 'rect', 'circle'].includes(currentTool)) {
+                saveState();
+            }
+            redraw();
+        }
+
+        function draw(e) {
+            if (!isDrawing) return;
+
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            const ctx = layers[currentLayer].ctx;
+
+            ctx.lineWidth = brushSize.value;
+            ctx.lineCap = 'round';
+            ctx.strokeStyle = currentTool === 'pen' ? colorPicker.value : 'white';
+            ctx.fillStyle = colorPicker.value;
+
+            if (currentTool === 'pen' || currentTool === 'eraser') {
+                ctx.lineTo(x, y);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(x, y);
+                redraw();
+            } else {
+                redraw();
+                ctx.beginPath();
+                if (currentTool === 'line') {
+                    ctx.moveTo(startX, startY);
+                    ctx.lineTo(x, y);
+                    ctx.stroke();
+                } else if (currentTool === 'rect') {
+                    const width = x - startX;
+                    const height = y - startY;
+                    ctx.strokeRect(startX, startY, width, height);
+                } else if (currentTool === 'circle') {
+                    const radius = Math.sqrt((x - startX) ** 2 + (y - startY) ** 2);
+                    ctx.arc(startX, startY, radius, 0, 2 * Math.PI);
+                    ctx.stroke();
+                }
+            }
+        }
+
+        function redraw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            layers.forEach(layer => ctx.drawImage(layer.canvas, 0, 0));
+        }
+
+        function handleTouch(e) {
+            e.preventDefault();
+            const touch = e.touches[0];
+            const mouseEvent = new MouseEvent(e.type === 'touchstart' ? 'mousedown' : 'mousemove', {
+                clientX: touch.clientX,
+                clientY: touch.clientY
+            });
+            canvas.dispatchEvent(mouseEvent);
+        }
+    </script>
+</body>
+</html>
