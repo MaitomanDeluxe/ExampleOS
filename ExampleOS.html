@@ -40,6 +40,13 @@
       user-select: none;
       font-weight: bold;
     }
+    .controls {
+      display: flex;
+      gap: 8px;
+    }
+    .controls span {
+      cursor: pointer;
+    }
     .iframe-container {
       flex-grow: 1;
       display: flex;
@@ -57,13 +64,22 @@
       height: 40px;
       background: #333;
       display: flex;
+      justify-content: space-between;
       align-items: center;
       padding: 0 10px;
       box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.5);
-      z-index: 1000;
+      z-index: 9999;
+    }
+    .taskbar .left, .taskbar .center, .taskbar .right {
+      display: flex;
+      align-items: center;
+    }
+    .taskbar .center {
+      flex-grow: 1;
+      justify-content: center;
     }
     .taskbar button {
-      margin-right: 10px;
+      margin: 0 5px;
       padding: 6px 12px;
       font-size: 14px;
       font-weight: bold;
@@ -119,13 +135,26 @@
 </head>
 <body style="background-image: url('Images/back1.png'); background-size: cover;">
   <div class="taskbar" id="taskbar">
-    <button onclick="openSetting()">設定</button>
+    <div class="left"></div>
+    <div class="center">
+      <button onclick="openSetting()">設定</button>
+      <button onclick="openWindow('Apps/notepad.html', 'メモ帳')">メモ帳</button>
+      <button onclick="openWindow('Apps/paint.html', 'ペイント')">ペイント</button>
+    </div>
+    <div class="right" id="clock">--:--</div>
   </div>
 
   <div id="linux" class="window hidden" style="top: 460px; left: 20px;">
-    <div class="title-bar">Ubuntu</div>
+    <div class="title-bar">
+      Ubuntu
+      <div class="controls">
+        <span onclick="minimizeWindow(this)">ー</span>
+        <span onclick="maximizeWindow(this)">◽︎</span>
+        <span onclick="closeWindow(this)">×</span>
+      </div>
+    </div>
     <div class="iframe-container">
-      <iframe src="ETerminal.html"></iframe>
+      <iframe src="Apps/ETerminal.html"></iframe>
     </div>
   </div>
 
@@ -137,124 +166,27 @@
   </div>
 
   <script>
-    let dragTarget = null, offsetX = 0, offsetY = 0;
-
-    function makeDraggable(win) {
-      const bar = win.querySelector('.title-bar');
-      bar.addEventListener('mousedown', e => {
-        dragTarget = win;
-        bringToFront(win);
-        offsetX = e.clientX - win.offsetLeft;
-        offsetY = e.clientY - win.offsetTop;
-      });
-      bar.addEventListener('touchstart', e => {
-        const touch = e.touches[0];
-        dragTarget = win;
-        bringToFront(win);
-        offsetX = touch.clientX - win.offsetLeft;
-        offsetY = touch.clientY - win.offsetTop;
-      });
+    function updateClock() {
+      const now = new Date();
+      const days = ['日','月','火','水','木','金','土'];
+      document.getElementById('clock').innerText = `${now.getFullYear()}/${String(now.getMonth()+1).padStart(2,'0')}/${String(now.getDate()).padStart(2,'0')} (${days[now.getDay()]}) ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
     }
+    setInterval(updateClock, 1000);
+    updateClock();
 
-    function bringToFront(el) {
-      el.style.zIndex = Date.now();
+    function minimizeWindow(btn) {
+      btn.closest('.window').style.display = 'none';
     }
-
-    document.addEventListener('mousemove', e => {
-      if (dragTarget) {
-        dragTarget.style.left = (e.clientX - offsetX) + 'px';
-        dragTarget.style.top = (e.clientY - offsetY) + 'px';
-      }
-    });
-
-    document.addEventListener('mouseup', () => dragTarget = null);
-    document.addEventListener('touchend', () => dragTarget = null);
-    document.addEventListener('touchmove', e => {
-      if (dragTarget) {
-        const touch = e.touches[0];
-        dragTarget.style.left = (touch.clientX - offsetX) + 'px';
-        dragTarget.style.top = (touch.clientY - offsetY) + 'px';
-      }
-    });
-
-    document.addEventListener('keydown', e => {
-      if (e.shiftKey && e.code === 'KeyR') {
-        e.preventDefault();
-        const prompt = document.getElementById('runPrompt');
-        prompt.style.display = 'block';
-        const input = document.getElementById('runInput');
-        input.value = '';
-        input.placeholder = 'ファイル名またはパスを入力...';
-        input.focus();
-      } else if (e.key === 'Escape') {
-        document.getElementById('runPrompt').style.display = 'none';
-      }
-    });
-
-    document.getElementById('runInput').addEventListener('keydown', e => {
-      if (e.key === 'Enter') {
-        const path = e.target.value.trim().toLowerCase();
-        if (path === 'terminal') {
-          document.getElementById('linux').classList.remove('hidden');
-        } else if (path === 'notepad') {
-          openWindow('Apps/notepad.html', 'メモ帳');
-        } else if (path.endsWith('.html')) {
-          openWindow(path, path);
-        }
-        document.getElementById('runPrompt').style.display = 'none';
-      }
-    });
-
-    document.getElementById('fileButton').addEventListener('click', () => {
-      document.getElementById('fileLoader').click();
-    });
-
-    document.getElementById('fileLoader').addEventListener('change', e => {
-      const file = e.target.files[0];
-      if (file && file.name.endsWith('.html')) {
-        const reader = new FileReader();
-        reader.onload = function(evt) {
-          openWindowURL(evt.target.result, file.name, true);
-        };
-        reader.readAsText(file);
-        document.getElementById('runPrompt').style.display = 'none';
-      }
-    });
-
-    function openSetting() {
-      openWindow('Apps/setting.html', '設定');
+    function maximizeWindow(btn) {
+      const win = btn.closest('.window');
+      win.style.top = '0px';
+      win.style.left = '0px';
+      win.style.width = '100vw';
+      win.style.height = 'calc(100vh - 40px)';
     }
-
-    function openWindow(url, title) {
-      const win = document.createElement('div');
-      win.className = 'window';
-      win.style.top = '150px';
-      win.style.left = '150px';
-      win.innerHTML = `<div class="title-bar">${title}</div><div class="iframe-container"><iframe src="${url}"></iframe></div>`;
-      document.body.appendChild(win);
-      makeDraggable(win);
-      bringToFront(win);
+    function closeWindow(btn) {
+      btn.closest('.window').remove();
     }
-
-    function openWindowURL(content, title, useSrcdoc = false) {
-      const win = document.createElement('div');
-      win.className = 'window';
-      win.style.top = '150px';
-      win.style.left = '150px';
-      win.innerHTML = `<div class="title-bar">${title}</div><div class="iframe-container"><iframe ${useSrcdoc ? `srcdoc="${content}"` : `src="${content}"`}></iframe></div>`;
-      document.body.appendChild(win);
-      makeDraggable(win);
-      bringToFront(win);
-    }
-
-    window.addEventListener('message', e => {
-      if (e.data.type === 'setBackground') {
-        document.body.style.backgroundImage = `url('${e.data.value}')`;
-      }
-      if (e.data.type === 'setTaskbarColor') {
-        document.getElementById('taskbar').style.backgroundColor = e.data.value;
-      }
-    });
   </script>
 </body>
 </html>
