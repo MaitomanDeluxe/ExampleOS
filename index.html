@@ -138,8 +138,11 @@ document.getElementById('hintBtn').onclick = () => {
   }, 3000);
 };
 
-document.getElementById('pinInput').addEventListener('keydown', e => {
-  if (e.key === 'Enter') {
+document.getElementById('pinInput').addEventListener('input', e => {
+  // Reset border style on any input
+  e.target.style.border = ''; 
+
+  if (e.target.value.length === 4) {
     if (e.target.value === '1234') {
       document.getElementById('loginBox').style.display = 'none';
       document.getElementById('welcomeBox').style.display = 'block';
