@@ -39,6 +39,7 @@
       cursor: move;
       user-select: none;
       font-weight: bold;
+      flex-shrink: 0;
     }
     .controls {
       display: flex;
@@ -89,6 +90,16 @@
       background-color: #444;
       color: #fff;
       transition: background 0.2s;
+      position: relative;
+    }
+    .taskbar button.active::after {
+      content: "";
+      position: absolute;
+      bottom: -2px;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: white;
     }
     .taskbar button:hover {
       background-color: #666;
@@ -105,7 +116,7 @@
       border: 1px solid #444;
       padding: 20px;
       display: none;
-      z-index: 1001;
+      z-index: 10000;
       color: white;
     }
     #runPrompt h3 {
@@ -138,14 +149,14 @@
     <div class="left"></div>
     <div class="center">
       <button onclick="openSetting()">設定</button>
-      <button onclick="openWindow('Apps/notepad.html', 'メモ帳')">メモ帳</button>
-      <button onclick="openWindow('Apps/paint.html', 'ペイント')">ペイント</button>
+      <button onclick="openWindow('Apps/notepad.html', 'メモ帳', this)">メモ帳</button>
+      <button onclick="openWindow('Apps/paint.html', 'ペイント', this)">ペイント</button>
     </div>
     <div class="right" id="clock">--:--</div>
   </div>
 
   <div id="runPrompt">
-    <h3>ファイル名を指定して実行</h3>
+    <h3>ファイル名を指定して実行 <span onclick="closeRunPrompt()" style="cursor:pointer;float:right;">×</span></h3>
     <input type="text" id="runInput" placeholder="ファイル名またはパスを入力...">
     <button id="fileButton">📁</button>
     <input type="file" id="fileLoader" accept=".html" style="display:none">
@@ -161,11 +172,12 @@
     setInterval(updateClock, 1000);
     updateClock();
 
-    function openWindow(src, title) {
+    function openWindow(src, title, btn = null) {
       const win = document.createElement('div');
       win.className = 'window';
       win.style.top = 'calc(50% - 200px)';
       win.style.left = 'calc(50% - 300px)';
+      win.style.zIndex = ++topZ;
       win.innerHTML = `
         <div class="title-bar">
           ${title}
@@ -180,6 +192,8 @@
         </div>
       `;
       document.body.appendChild(win);
+      makeDraggable(win);
+      if (btn) btn.classList.add('active');
     }
 
     function maximizeWindow(btn) {
@@ -191,16 +205,18 @@
       win.style.zIndex = ++topZ;
     }
 
-    // ドラッグ移動
-    let dragTarget = null, offsetX = 0, offsetY = 0;
-    document.addEventListener('mousedown', e => {
-      if (e.target.classList.contains('title-bar')) {
-        dragTarget = e.target.parentElement;
-        offsetX = e.clientX - dragTarget.offsetLeft;
-        offsetY = e.clientY - dragTarget.offsetTop;
-        dragTarget.style.zIndex = ++topZ;
-      }
-    });
+    function makeDraggable(win) {
+      const bar = win.querySelector('.title-bar');
+      let offsetX, offsetY;
+      bar.addEventListener('mousedown', e => {
+        offsetX = e.clientX - win.offsetLeft;
+        offsetY = e.clientY - win.offsetTop;
+        dragTarget = win;
+        win.style.zIndex = ++topZ;
+      });
+    }
+
+    let dragTarget = null;
     document.addEventListener('mousemove', e => {
       if (dragTarget) {
         dragTarget.style.left = (e.clientX - offsetX) + 'px';
@@ -209,19 +225,29 @@
     });
     document.addEventListener('mouseup', () => dragTarget = null);
 
+    function openSetting() {
+      openWindow('Apps/setting.html', '設定');
+    }
+
     // Shift+R 実行プロンプト表示
     document.addEventListener('keydown', e => {
       if (e.shiftKey && e.key === 'R') {
-        document.getElementById('runPrompt').style.display = 'block';
+        const prompt = document.getElementById('runPrompt');
+        prompt.style.display = 'block';
+        prompt.style.zIndex = ++topZ;
         document.getElementById('runInput').focus();
       }
     });
+
+    function closeRunPrompt() {
+      document.getElementById('runPrompt').style.display = 'none';
+    }
 
     document.getElementById('runInput').addEventListener('keydown', e => {
       if (e.key === 'Enter') {
         const path = document.getElementById('runInput').value;
         if (path) openWindow(path, path);
-        document.getElementById('runPrompt').style.display = 'none';
+        closeRunPrompt();
       }
     });
 
@@ -238,13 +264,9 @@
           openWindow(url, file.name);
         };
         reader.readAsText(file);
-        document.getElementById('runPrompt').style.display = 'none';
+        closeRunPrompt();
       }
     });
-
-    function openSetting() {
-      openWindow('Apps/setting.html', '設定');
-    }
   </script>
 </body>
 </html>
