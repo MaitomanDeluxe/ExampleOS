@@ -69,6 +69,7 @@
       padding: 0 10px;
       box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.5);
       z-index: 9999;
+      color: #fff;
     }
     .taskbar .left, .taskbar .center, .taskbar .right {
       display: flex;
@@ -137,25 +138,11 @@
   <div class="taskbar" id="taskbar">
     <div class="left"></div>
     <div class="center">
-      <button onclick="openSetting()">設定</button>
+      <button onclick="openWindow('Apps/setting.html', '設定')">設定</button>
       <button onclick="openWindow('Apps/notepad.html', 'メモ帳')">メモ帳</button>
       <button onclick="openWindow('Apps/paint.html', 'ペイント')">ペイント</button>
     </div>
     <div class="right" id="clock">--:--</div>
-  </div>
-
-  <div id="linux" class="window hidden" style="top: 460px; left: 20px;">
-    <div class="title-bar">
-      Ubuntu
-      <div class="controls">
-        <span onclick="minimizeWindow(this)">ー</span>
-        <span onclick="maximizeWindow(this)">◽︎</span>
-        <span onclick="closeWindow(this)">×</span>
-      </div>
-    </div>
-    <div class="iframe-container">
-      <iframe src="Apps/ETerminal.html"></iframe>
-    </div>
   </div>
 
   <div id="runPrompt">
@@ -169,23 +156,40 @@
     function updateClock() {
       const now = new Date();
       const days = ['日','月','火','水','木','金','土'];
-      document.getElementById('clock').innerText = `${now.getFullYear()}/${String(now.getMonth()+1).padStart(2,'0')}/${String(now.getDate()).padStart(2,'0')} (${days[now.getDay()]}) ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+      const taskbar = document.getElementById('taskbar');
+      const clock = document.getElementById('clock');
+      const dark = getComputedStyle(taskbar).backgroundColor;
+      clock.style.color = '#fff'; // default white, could adapt later
+      clock.innerText = `${now.getFullYear()}/${String(now.getMonth()+1).padStart(2,'0')}/${String(now.getDate()).padStart(2,'0')} (${days[now.getDay()]}) ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
     }
     setInterval(updateClock, 1000);
     updateClock();
 
-    function minimizeWindow(btn) {
-      btn.closest('.window').style.display = 'none';
+    function openWindow(src, title) {
+      const win = document.createElement('div');
+      win.className = 'window';
+      win.innerHTML = `
+        <div class="title-bar">
+          ${title}
+          <div class="controls">
+            <span onclick="this.closest('.window').style.display='none'">ー</span>
+            <span onclick="maximizeWindow(this)">◽︎</span>
+            <span onclick="this.closest('.window').remove()">×</span>
+          </div>
+        </div>
+        <div class="iframe-container">
+          <iframe src="${src}"></iframe>
+        </div>
+      `;
+      document.body.appendChild(win);
     }
+
     function maximizeWindow(btn) {
       const win = btn.closest('.window');
       win.style.top = '0px';
       win.style.left = '0px';
       win.style.width = '100vw';
       win.style.height = 'calc(100vh - 40px)';
-    }
-    function closeWindow(btn) {
-      btn.closest('.window').remove();
     }
   </script>
 </body>
