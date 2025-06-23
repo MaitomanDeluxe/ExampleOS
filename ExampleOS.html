@@ -137,7 +137,7 @@
   <div class="taskbar" id="taskbar">
     <div class="left"></div>
     <div class="center">
-      <button onclick="openWindow('Apps/setting.html', '設定')">設定</button>
+      <button onclick="openSetting()">設定</button>
       <button onclick="openWindow('Apps/notepad.html', 'メモ帳')">メモ帳</button>
       <button onclick="openWindow('Apps/paint.html', 'ペイント')">ペイント</button>
     </div>
@@ -152,6 +152,7 @@
   </div>
 
   <script>
+    let topZ = 10;
     function updateClock() {
       const now = new Date();
       const days = ['日','月','火','水','木','金','土'];
@@ -160,39 +161,89 @@
     setInterval(updateClock, 1000);
     updateClock();
 
-    function openWindow(url, titleText) {
+    function openWindow(src, title) {
       const win = document.createElement('div');
       win.className = 'window';
-      win.style.top = `${(window.innerHeight - 400) / 2}px`;
-      win.style.left = `${(window.innerWidth - 600) / 2}px`;
+      win.style.top = 'calc(50% - 200px)';
+      win.style.left = 'calc(50% - 300px)';
       win.innerHTML = `
         <div class="title-bar">
-          ${titleText}
+          ${title}
           <div class="controls">
-            <span onclick="minimizeWindow(this)">ー</span>
+            <span onclick="this.closest('.window').style.display='none'">ー</span>
             <span onclick="maximizeWindow(this)">◽︎</span>
-            <span onclick="closeWindow(this)">×</span>
+            <span onclick="this.closest('.window').remove()">×</span>
           </div>
         </div>
         <div class="iframe-container">
-          <iframe src="${url}"></iframe>
+          <iframe src="${src}"></iframe>
         </div>
       `;
       document.body.appendChild(win);
     }
 
-    function minimizeWindow(btn) {
-      btn.closest('.window').style.display = 'none';
-    }
     function maximizeWindow(btn) {
       const win = btn.closest('.window');
       win.style.top = '0px';
       win.style.left = '0px';
       win.style.width = '100vw';
       win.style.height = 'calc(100vh - 40px)';
+      win.style.zIndex = ++topZ;
     }
-    function closeWindow(btn) {
-      btn.closest('.window').remove();
+
+    // ドラッグ移動
+    let dragTarget = null, offsetX = 0, offsetY = 0;
+    document.addEventListener('mousedown', e => {
+      if (e.target.classList.contains('title-bar')) {
+        dragTarget = e.target.parentElement;
+        offsetX = e.clientX - dragTarget.offsetLeft;
+        offsetY = e.clientY - dragTarget.offsetTop;
+        dragTarget.style.zIndex = ++topZ;
+      }
+    });
+    document.addEventListener('mousemove', e => {
+      if (dragTarget) {
+        dragTarget.style.left = (e.clientX - offsetX) + 'px';
+        dragTarget.style.top = Math.max(e.clientY - offsetY, 0) + 'px';
+      }
+    });
+    document.addEventListener('mouseup', () => dragTarget = null);
+
+    // Shift+R 実行プロンプト表示
+    document.addEventListener('keydown', e => {
+      if (e.shiftKey && e.key === 'R') {
+        document.getElementById('runPrompt').style.display = 'block';
+        document.getElementById('runInput').focus();
+      }
+    });
+
+    document.getElementById('runInput').addEventListener('keydown', e => {
+      if (e.key === 'Enter') {
+        const path = document.getElementById('runInput').value;
+        if (path) openWindow(path, path);
+        document.getElementById('runPrompt').style.display = 'none';
+      }
+    });
+
+    document.getElementById('fileButton').addEventListener('click', () => {
+      document.getElementById('fileLoader').click();
+    });
+    document.getElementById('fileLoader').addEventListener('change', e => {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(ev) {
+          const blob = new Blob([ev.target.result], { type: 'text/html' });
+          const url = URL.createObjectURL(blob);
+          openWindow(url, file.name);
+        };
+        reader.readAsText(file);
+        document.getElementById('runPrompt').style.display = 'none';
+      }
+    });
+
+    function openSetting() {
+      openWindow('Apps/setting.html', '設定');
     }
   </script>
 </body>
