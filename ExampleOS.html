@@ -39,7 +39,6 @@
       cursor: move;
       user-select: none;
       font-weight: bold;
-      flex-shrink: 0;
     }
     .controls {
       display: flex;
@@ -90,16 +89,6 @@
       background-color: #444;
       color: #fff;
       transition: background 0.2s;
-      position: relative;
-    }
-    .taskbar button.active::after {
-      content: "";
-      position: absolute;
-      bottom: -2px;
-      left: 0;
-      right: 0;
-      height: 2px;
-      background: white;
     }
     .taskbar button:hover {
       background-color: #666;
@@ -116,7 +105,7 @@
       border: 1px solid #444;
       padding: 20px;
       display: none;
-      z-index: 10000;
+      z-index: 1001;
       color: white;
     }
     #runPrompt h3 {
@@ -142,21 +131,31 @@
     #fileButton:hover {
       background: #666;
     }
+    #googleSearch {
+      background: #000;
+      color: white;
+      border: 1px solid #666;
+      padding: 5px;
+      font-size: 14px;
+      width: 200px;
+    }
   </style>
 </head>
-<body style="background-image: url('Images/back1.png'); background-size: cover;">
+<body id="body" style="background-image: url('Images/back1.png'); background-size: cover;">
   <div class="taskbar" id="taskbar">
-    <div class="left"></div>
+    <div class="left">
+      <input type="text" id="googleSearch" placeholder="Google検索" onkeydown="if(event.key==='Enter'){window.open('https://www.google.com/search?q='+encodeURIComponent(this.value))}">
+    </div>
     <div class="center">
       <button onclick="openSetting()">設定</button>
-      <button onclick="openWindow('Apps/notepad.html', 'メモ帳', this)">メモ帳</button>
-      <button onclick="openWindow('Apps/paint.html', 'ペイント', this)">ペイント</button>
+      <button onclick="openWindow('Apps/notepad.html', 'メモ帳')">メモ帳</button>
+      <button onclick="openWindow('Apps/paint.html', 'ペイント')">ペイント</button>
     </div>
-    <div class="right" id="clock">--:--</div>
+    <div class="right" id="clock" style="color:white">--:--</div>
   </div>
 
   <div id="runPrompt">
-    <h3>ファイル名を指定して実行 <span onclick="closeRunPrompt()" style="cursor:pointer;float:right;">×</span></h3>
+    <h3>ファイル名を指定して実行</h3>
     <input type="text" id="runInput" placeholder="ファイル名またはパスを入力...">
     <button id="fileButton">📁</button>
     <input type="file" id="fileLoader" accept=".html" style="display:none">
@@ -172,7 +171,7 @@
     setInterval(updateClock, 1000);
     updateClock();
 
-    function openWindow(src, title, btn = null) {
+    function openWindow(src, title) {
       const win = document.createElement('div');
       win.className = 'window';
       win.style.top = 'calc(50% - 200px)';
@@ -192,8 +191,7 @@
         </div>
       `;
       document.body.appendChild(win);
-      makeDraggable(win);
-      if (btn) btn.classList.add('active');
+      enableDrag(win);
     }
 
     function maximizeWindow(btn) {
@@ -205,18 +203,17 @@
       win.style.zIndex = ++topZ;
     }
 
-    function makeDraggable(win) {
+    function enableDrag(win) {
       const bar = win.querySelector('.title-bar');
-      let offsetX, offsetY;
       bar.addEventListener('mousedown', e => {
+        dragTarget = win;
         offsetX = e.clientX - win.offsetLeft;
         offsetY = e.clientY - win.offsetTop;
-        dragTarget = win;
         win.style.zIndex = ++topZ;
       });
     }
 
-    let dragTarget = null;
+    let dragTarget = null, offsetX = 0, offsetY = 0;
     document.addEventListener('mousemove', e => {
       if (dragTarget) {
         dragTarget.style.left = (e.clientX - offsetX) + 'px';
@@ -225,32 +222,19 @@
     });
     document.addEventListener('mouseup', () => dragTarget = null);
 
-    function openSetting() {
-      openWindow('Apps/setting.html', '設定');
-    }
-
-    // Shift+R 実行プロンプト表示
     document.addEventListener('keydown', e => {
       if (e.shiftKey && e.key === 'R') {
-        const prompt = document.getElementById('runPrompt');
-        prompt.style.display = 'block';
-        prompt.style.zIndex = ++topZ;
+        document.getElementById('runPrompt').style.display = 'block';
         document.getElementById('runInput').focus();
       }
     });
-
-    function closeRunPrompt() {
-      document.getElementById('runPrompt').style.display = 'none';
-    }
-
     document.getElementById('runInput').addEventListener('keydown', e => {
       if (e.key === 'Enter') {
         const path = document.getElementById('runInput').value;
         if (path) openWindow(path, path);
-        closeRunPrompt();
+        document.getElementById('runPrompt').style.display = 'none';
       }
     });
-
     document.getElementById('fileButton').addEventListener('click', () => {
       document.getElementById('fileLoader').click();
     });
@@ -264,9 +248,13 @@
           openWindow(url, file.name);
         };
         reader.readAsText(file);
-        closeRunPrompt();
+        document.getElementById('runPrompt').style.display = 'none';
       }
     });
+
+    function openSetting() {
+      openWindow('Apps/setting.html', '設定');
+    }
   </script>
 </body>
 </html>
