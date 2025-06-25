@@ -1,58 +1,66 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <title>Vortex Browser</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vortex - 仮想ブラウザ</title>
   <style>
-    body {
+    html, body {
       margin: 0;
-      background: #1e1b2f;
-      color: #eee;
-      font-family: sans-serif;
+      height: 100vh;
+      background-color: #1a092d;
+      font-family: 'Segoe UI', sans-serif;
+      color: white;
       display: flex;
       flex-direction: column;
-      height: 100vh;
     }
     header {
-      background: #5a1ea1;
-      padding: 8px;
+      background: linear-gradient(90deg, #7f00ff, #e100ff);
+      padding: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    #tabs {
       display: flex;
       gap: 8px;
     }
-    input {
-      flex: 1;
-      padding: 6px;
-      border-radius: 4px;
-      border: none;
-      font-size: 16px;
-    }
-    button {
-      background: #7e42e1;
-      border: none;
-      padding: 6px 10px;
-      color: white;
-      font-weight: bold;
-      border-radius: 4px;
-      cursor: pointer;
-    }
-    #tabs {
-      background: #2a223f;
-      display: flex;
-      overflow-x: auto;
-    }
-    #tabs div {
+    .tab {
+      background: #4c1a75;
       padding: 6px 12px;
+      border-radius: 6px 6px 0 0;
       cursor: pointer;
-      border-bottom: 2px solid transparent;
-      color: #ccc;
     }
-    #tabs .active {
-      background: #3b2a5f;
-      border-bottom: 2px solid #ae82ff;
+    .tab.active {
+      background: #6d28d9;
+      font-weight: bold;
+    }
+    #searchBar {
+      display: flex;
+      margin: 0 10px;
+    }
+    #searchInput {
+      width: 400px;
+      padding: 6px;
+      border: none;
+      border-radius: 4px 0 0 4px;
+    }
+    #searchBtn {
+      padding: 6px 12px;
+      border: none;
+      background: #6d28d9;
       color: white;
+      border-radius: 0 4px 4px 0;
+      cursor: pointer;
+    }
+    #browserArea {
+      flex-grow: 1;
+      background: black;
+      display: flex;
+      flex-direction: column;
     }
     iframe {
-      flex: 1;
+      flex-grow: 1;
       border: none;
       width: 100%;
     }
@@ -60,69 +68,66 @@
 </head>
 <body>
   <header>
-    <input type="text" id="searchBox" placeholder="Bing検索 or URLを入力..." />
-    <button onclick="addTab()">＋</button>
+    <div id="tabs"></div>
+    <div id="searchBar">
+      <input type="text" id="searchInput" placeholder="検索またはURLを入力..." />
+      <button id="searchBtn">🔍</button>
+    </div>
   </header>
-  <div id="tabs"></div>
-  <div id="viewContainer"></div>
+  <div id="browserArea"></div>
 
   <script>
     const tabs = [];
     let activeTabIndex = -1;
 
-    function createIframe(url) {
+    const tabsContainer = document.getElementById('tabs');
+    const browserArea = document.getElementById('browserArea');
+    const searchInput = document.getElementById('searchInput');
+    const searchBtn = document.getElementById('searchBtn');
+
+    function createTab(url) {
       const iframe = document.createElement('iframe');
       iframe.src = url;
-      return iframe;
-    }
 
-    function addTab(url = 'https://www.bing.com/') {
-      const tabIndex = tabs.length;
+      const tab = {
+        title: url,
+        iframe,
+        element: document.createElement('div')
+      };
+      tab.element.className = 'tab';
+      tab.element.textContent = url.length > 15 ? url.slice(0, 15) + '…' : url;
+      tab.element.onclick = () => switchTab(tabs.indexOf(tab));
 
-      // タブボタン
-      const tabButton = document.createElement('div');
-      tabButton.textContent = `タブ${tabIndex + 1}`;
-      tabButton.onclick = () => switchTab(tabIndex);
-      document.getElementById('tabs').appendChild(tabButton);
-
-      // iframeビュー
-      const iframe = createIframe(url);
-      iframe.style.display = 'none';
-      document.getElementById('viewContainer').appendChild(iframe);
-
-      tabs.push({ tabButton, iframe });
-      switchTab(tabIndex);
+      tabs.push(tab);
+      tabsContainer.appendChild(tab.element);
+      switchTab(tabs.length - 1);
     }
 
     function switchTab(index) {
-      if (index === activeTabIndex) return;
-
-      // 非表示処理
       if (activeTabIndex !== -1) {
-        tabs[activeTabIndex].iframe.style.display = 'none';
-        tabs[activeTabIndex].tabButton.classList.remove('active');
+        tabs[activeTabIndex].element.classList.remove('active');
+        browserArea.removeChild(tabs[activeTabIndex].iframe);
       }
-
-      // 表示切り替え
-      tabs[index].iframe.style.display = 'block';
-      tabs[index].tabButton.classList.add('active');
       activeTabIndex = index;
-
-      document.getElementById('searchBox').value = tabs[index].iframe.src;
+      tabs[activeTabIndex].element.classList.add('active');
+      browserArea.appendChild(tabs[activeTabIndex].iframe);
     }
 
-    // 検索・URL入力
-    document.getElementById('searchBox').addEventListener('keydown', e => {
-      if (e.key === 'Enter' && activeTabIndex !== -1) {
-        const input = e.target.value;
-        const isURL = input.startsWith('http') || input.includes('.');
-        const query = isURL ? input : `https://www.bing.com/search?q=${encodeURIComponent(input)}`;
-        tabs[activeTabIndex].iframe.src = query;
-      }
+    searchBtn.onclick = () => {
+      const query = searchInput.value.trim();
+      if (!query) return;
+      const isURL = query.startsWith('http://') || query.startsWith('https://');
+      const url = isURL ? query : `https://duckduckgo.com/?q=${encodeURIComponent(query)}`;
+      createTab(url);
+      searchInput.value = '';
+    };
+
+    searchInput.addEventListener('keydown', e => {
+      if (e.key === 'Enter') searchBtn.click();
     });
 
     // 初期タブ
-    addTab();
+    createTab('https://duckduckgo.com');
   </script>
 </body>
 </html>
