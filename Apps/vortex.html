@@ -58,11 +58,19 @@
       background: black;
       display: flex;
       flex-direction: column;
+      overflow: hidden;
+    }
+    .iframe-wrapper {
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
     }
     iframe {
-      flex-grow: 1;
       border: none;
       width: 100%;
+      height: 100%;
+      flex-grow: 1;
+      background: white;
     }
   </style>
 </head>
@@ -86,11 +94,17 @@
     const searchBtn = document.getElementById('searchBtn');
 
     function createTab(url) {
+      const wrapper = document.createElement('div');
+      wrapper.className = 'iframe-wrapper';
+
       const iframe = document.createElement('iframe');
       iframe.src = url;
 
+      wrapper.appendChild(iframe);
+
       const tab = {
         title: url,
+        wrapper,
         iframe,
         element: document.createElement('div')
       };
@@ -106,11 +120,11 @@
     function switchTab(index) {
       if (activeTabIndex !== -1) {
         tabs[activeTabIndex].element.classList.remove('active');
-        browserArea.removeChild(tabs[activeTabIndex].iframe);
+        browserArea.removeChild(tabs[activeTabIndex].wrapper);
       }
       activeTabIndex = index;
       tabs[activeTabIndex].element.classList.add('active');
-      browserArea.appendChild(tabs[activeTabIndex].iframe);
+      browserArea.appendChild(tabs[activeTabIndex].wrapper);
     }
 
     searchBtn.onclick = () => {
