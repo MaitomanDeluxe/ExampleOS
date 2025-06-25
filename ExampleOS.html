@@ -144,7 +144,7 @@
 <body id="body" style="background-image: url('Images/back1.png'); background-size: cover;">
   <div class="taskbar" id="taskbar">
     <div class="left">
-      <input type="text" id="bingSearch" placeholder="Bing検索" onkeydown="if(event.key==='Enter'){searchBing(this)}">
+      <input type="text" id="bingSearch" placeholder="検索..." onkeydown="if(event.key==='Enter'){searchInVortex(this)}">
     </div>
     <div class="center">
       <button onclick="openSetting()">設定</button>
@@ -256,12 +256,13 @@
       openWindow('Apps/setting.html', '設定');
     }
 
-    function searchBing(inputElem) {
-      const query = inputElem.value;
+    function searchInVortex(inputElem) {
+      const query = inputElem.value.trim();
       if (!query) return;
       inputElem.value = '';
-      openWindow('https://www.bing.com/search?q=' + encodeURIComponent(query), 'Bing検索');
+      openWindow(`Apps/vortex.html?q=${encodeURIComponent(query)}`, 'Vortex');
     }
+
   </script>
 </body>
 </html>
