@@ -93,45 +93,7 @@
     .taskbar button:hover {
       background-color: #666;
     }
-    .hidden {
-      display: none !important;
-    }
-    #runPrompt {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      background: #222;
-      border: 1px solid #444;
-      padding: 20px;
-      display: none;
-      z-index: 1001;
-      color: white;
-    }
-    #runPrompt h3 {
-      margin: 0 0 10px;
-    }
-    #runPrompt input {
-      width: 300px;
-      padding: 8px;
-      font-size: 16px;
-      background: #111;
-      color: #fff;
-      border: 1px solid #555;
-    }
-    #fileButton {
-      margin-left: 10px;
-      padding: 6px 10px;
-      background: #444;
-      border: none;
-      color: white;
-      font-size: 16px;
-      cursor: pointer;
-    }
-    #fileButton:hover {
-      background: #666;
-    }
-    #bingSearch {
+    #duckSearch {
       background: #000;
       color: white;
       border: 1px solid #666;
@@ -144,7 +106,7 @@
 <body id="body" style="background-image: url('Images/back1.png'); background-size: cover;">
   <div class="taskbar" id="taskbar">
     <div class="left">
-      <input type="text" id="bingSearch" placeholder="検索..." onkeydown="if(event.key==='Enter'){searchInVortex(this)}">
+      <input type="text" id="duckSearch" placeholder="DuckDuckGo検索" onkeydown="if(event.key==='Enter'){searchDuck(this)}">
     </div>
     <div class="center">
       <button onclick="openSetting()">設定</button>
@@ -152,13 +114,6 @@
       <button onclick="openWindow('Apps/paint.html', 'ペイント')">ペイント</button>
     </div>
     <div class="right" id="clock" style="color:white">--:--</div>
-  </div>
-
-  <div id="runPrompt">
-    <h3>ファイル名を指定して実行</h3>
-    <input type="text" id="runInput" placeholder="ファイル名またはパスを入力...">
-    <button id="fileButton">📁</button>
-    <input type="file" id="fileLoader" accept=".html" style="display:none">
   </div>
 
   <script>
@@ -222,47 +177,16 @@
     });
     document.addEventListener('mouseup', () => dragTarget = null);
 
-    document.addEventListener('keydown', e => {
-      if (e.shiftKey && e.key === 'R') {
-        document.getElementById('runPrompt').style.display = 'block';
-        document.getElementById('runInput').focus();
-      }
-    });
-    document.getElementById('runInput').addEventListener('keydown', e => {
-      if (e.key === 'Enter') {
-        const path = document.getElementById('runInput').value;
-        if (path) openWindow(path, path);
-        document.getElementById('runPrompt').style.display = 'none';
-      }
-    });
-    document.getElementById('fileButton').addEventListener('click', () => {
-      document.getElementById('fileLoader').click();
-    });
-    document.getElementById('fileLoader').addEventListener('change', e => {
-      const file = e.target.files[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = function(ev) {
-          const blob = new Blob([ev.target.result], { type: 'text/html' });
-          const url = URL.createObjectURL(blob);
-          openWindow(url, file.name);
-        };
-        reader.readAsText(file);
-        document.getElementById('runPrompt').style.display = 'none';
-      }
-    });
-
     function openSetting() {
       openWindow('Apps/setting.html', '設定');
     }
 
-    function searchInVortex(inputElem) {
-      const query = inputElem.value.trim();
+    function searchDuck(inputElem) {
+      const query = inputElem.value;
       if (!query) return;
       inputElem.value = '';
-      openWindow(`Apps/vortex.html?q=${encodeURIComponent(query)}`, 'Vortex');
+      openWindow('https://duckduckgo.com/?q=' + encodeURIComponent(query), 'DuckDuckGo');
     }
-
   </script>
 </body>
 </html>
