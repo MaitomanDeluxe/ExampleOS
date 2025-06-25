@@ -1,126 +1,61 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Vortex ブラウザ</title>
+  <meta charset="UTF-8" />
+  <title>Vortex - Search</title>
   <style>
     body {
       margin: 0;
-      background: #1a0d2e;
-      font-family: 'Segoe UI', sans-serif;
+      font-family: sans-serif;
+      background: #1e1b2f;
       color: #eee;
     }
-    .vortex {
+    header {
+      background: #5a1ea1;
+      padding: 10px;
       display: flex;
-      flex-direction: column;
-      height: 100vh;
+      align-items: center;
     }
-    .tab-bar {
-      background: #2d1152;
-      display: flex;
-      padding: 5px;
-    }
-    .tab {
-      background: #4b1f87;
-      margin-right: 5px;
-      padding: 5px 10px;
-      border-radius: 5px 5px 0 0;
-      cursor: pointer;
-    }
-    .tab.active {
-      background: #7230d6;
-    }
-    .toolbar {
-      background: #3b176b;
-      display: flex;
-      padding: 8px;
-    }
-    .toolbar input {
+    input {
       flex: 1;
       padding: 8px;
+      border: none;
+      border-radius: 4px;
       font-size: 16px;
-      border: none;
-      border-radius: 4px;
-      background: #240c45;
-      color: #fff;
-    }
-    .toolbar button {
-      margin-left: 10px;
-      padding: 8px 12px;
-      background: #7230d6;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
     }
     iframe {
-      flex: 1;
       width: 100%;
+      height: calc(100vh - 50px);
       border: none;
     }
   </style>
 </head>
 <body>
-<div class="vortex">
-  <div class="tab-bar" id="tabBar"></div>
-  <div class="toolbar">
-    <input type="text" id="urlInput" placeholder="URL または検索語句を入力...">
-    <button onclick="navigate()">移動</button>
-    <button onclick="newTab()">＋ 新しいタブ</button>
-  </div>
-  <iframe id="browserFrame" src="https://www.bing.com"></iframe>
-</div>
+  <header>
+    <input type="text" id="searchBox" placeholder="Bing検索..." />
+  </header>
+  <iframe id="searchFrame" src=""></iframe>
 
-<script>
-  const tabs = [];
-  let currentTab = -1;
+  <script>
+    const params = new URLSearchParams(location.search);
+    const q = params.get('q');
+    const input = document.getElementById('searchBox');
+    const iframe = document.getElementById('searchFrame');
 
-  function newTab(url = 'https://www.bing.com') {
-    tabs.push({ title: '新しいタブ', url });
-    currentTab = tabs.length - 1;
-    renderTabs();
-    navigateTo(url);
-  }
-
-  function renderTabs() {
-    const bar = document.getElementById('tabBar');
-    bar.innerHTML = '';
-    tabs.forEach((tab, index) => {
-      const btn = document.createElement('div');
-      btn.className = 'tab' + (index === currentTab ? ' active' : '');
-      btn.textContent = tab.title;
-      btn.onclick = () => {
-        currentTab = index;
-        renderTabs();
-        navigateTo(tabs[index].url);
-      };
-      bar.appendChild(btn);
-    });
-  }
-
-  function navigate() {
-    const input = document.getElementById('urlInput');
-    const text = input.value.trim();
-    let url = text;
-    if (!text.includes('.') || text.includes(' ')) {
-      url = 'https://www.bing.com/search?q=' + encodeURIComponent(text);
-    } else if (!text.startsWith('http')) {
-      url = 'https://' + text;
+    function doSearch(query) {
+      iframe.src = 'https://www.bing.com/search?q=' + encodeURIComponent(query);
     }
-    navigateTo(url);
-    tabs[currentTab].url = url;
-    tabs[currentTab].title = text;
-    renderTabs();
-  }
 
-  function navigateTo(url) {
-    document.getElementById('browserFrame').src = url;
-    document.getElementById('urlInput').value = url;
-  }
+    if (q) {
+      input.value = q;
+      doSearch(q);
+    }
 
-  // 初期タブ作成
-  newTab();
-</script>
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Enter') {
+        doSearch(input.value);
+      }
+    });
+  </script>
 </body>
 </html>
