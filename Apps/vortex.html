@@ -1,128 +1,192 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <title>Vortex Browser</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>仮想ターミナルOS</title>
   <style>
-    body {
+    html, body {
       margin: 0;
-      background: #1e1b2f;
-      color: #eee;
-      font-family: sans-serif;
+      background-color: #1e1e1e;
+      font-family: monospace;
+      height: 100vh;
+      overflow: hidden;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: none;
+    }
+    .window {
+      position: absolute;
+      width: 600px;
+      height: 400px;
+      background: #000;
+      border: 1px solid #666;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.6);
       display: flex;
       flex-direction: column;
-      height: 100vh;
+      resize: both;
+      overflow: hidden;
+      z-index: 1;
     }
-    header {
-      background: #5a1ea1;
-      padding: 8px;
+    .title-bar {
+      height: 30px;
+      background: #444;
+      color: #fff;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 10px;
+      cursor: move;
+      user-select: none;
+      font-weight: bold;
+    }
+    .controls {
       display: flex;
       gap: 8px;
     }
-    input {
-      flex: 1;
-      padding: 6px;
-      border-radius: 4px;
-      border: none;
-      font-size: 16px;
-    }
-    button {
-      background: #7e42e1;
-      border: none;
-      padding: 6px 10px;
-      color: white;
-      font-weight: bold;
-      border-radius: 4px;
+    .controls span {
       cursor: pointer;
     }
-    #tabs {
-      background: #2a223f;
+    .iframe-container {
+      flex-grow: 1;
       display: flex;
-      overflow-x: auto;
-    }
-    #tabs div {
-      padding: 6px 12px;
-      cursor: pointer;
-      border-bottom: 2px solid transparent;
-      color: #ccc;
-    }
-    #tabs .active {
-      background: #3b2a5f;
-      border-bottom: 2px solid #ae82ff;
-      color: white;
     }
     iframe {
-      flex: 1;
       border: none;
       width: 100%;
+      height: 100%;
+    }
+    .taskbar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 40px;
+      background: #333;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 10px;
+      box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.5);
+      z-index: 9999;
+    }
+    .taskbar .left, .taskbar .center, .taskbar .right {
+      display: flex;
+      align-items: center;
+    }
+    .taskbar .center {
+      flex-grow: 1;
+      justify-content: center;
+    }
+    .taskbar button {
+      margin: 0 5px;
+      padding: 6px 12px;
+      font-size: 14px;
+      font-weight: bold;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      background-color: #444;
+      color: #fff;
+      transition: background 0.2s;
+    }
+    .taskbar button:hover {
+      background-color: #666;
+    }
+    #duckSearch {
+      background: #000;
+      color: white;
+      border: 1px solid #666;
+      padding: 5px;
+      font-size: 14px;
+      width: 200px;
     }
   </style>
 </head>
-<body>
-  <header>
-    <input type="text" id="searchBox" placeholder="Bing検索 or URLを入力..." />
-    <button onclick="addTab()">＋</button>
-  </header>
-  <div id="tabs"></div>
-  <div id="viewContainer"></div>
+<body id="body" style="background-image: url('Images/back1.png'); background-size: cover;">
+  <div class="taskbar" id="taskbar">
+    <div class="left">
+      <input type="text" id="duckSearch" placeholder="DuckDuckGo検索" onkeydown="if(event.key==='Enter'){searchDuck(this)}">
+    </div>
+    <div class="center">
+      <button onclick="openSetting()">設定</button>
+      <button onclick="openWindow('Apps/notepad.html', 'メモ帳')">メモ帳</button>
+      <button onclick="openWindow('Apps/paint.html', 'ペイント')">ペイント</button>
+    </div>
+    <div class="right" id="clock" style="color:white">--:--</div>
+  </div>
 
   <script>
-    const tabs = [];
-    let activeTabIndex = -1;
+    let topZ = 10;
+    function updateClock() {
+      const now = new Date();
+      const days = ['日','月','火','水','木','金','土'];
+      document.getElementById('clock').innerText = `${now.getFullYear()}/${String(now.getMonth()+1).padStart(2,'0')}/${String(now.getDate()).padStart(2,'0')} (${days[now.getDay()]}) ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
 
-    function createIframe(url) {
-      const iframe = document.createElement('iframe');
-      iframe.src = url;
-      return iframe;
+    function openWindow(src, title) {
+      const win = document.createElement('div');
+      win.className = 'window';
+      win.style.top = 'calc(50% - 200px)';
+      win.style.left = 'calc(50% - 300px)';
+      win.style.zIndex = ++topZ;
+      win.innerHTML = `
+        <div class="title-bar">
+          ${title}
+          <div class="controls">
+            <span onclick="this.closest('.window').style.display='none'">ー</span>
+            <span onclick="maximizeWindow(this)">◽︎</span>
+            <span onclick="this.closest('.window').remove()">×</span>
+          </div>
+        </div>
+        <div class="iframe-container">
+          <iframe src="${src}"></iframe>
+        </div>
+      `;
+      document.body.appendChild(win);
+      enableDrag(win);
     }
 
-    function addTab(url = 'https://www.bing.com/') {
-      const tabIndex = tabs.length;
-
-      // タブボタン
-      const tabButton = document.createElement('div');
-      tabButton.textContent = `タブ${tabIndex + 1}`;
-      tabButton.onclick = () => switchTab(tabIndex);
-      document.getElementById('tabs').appendChild(tabButton);
-
-      // iframeビュー
-      const iframe = createIframe(url);
-      iframe.style.display = 'none';
-      document.getElementById('viewContainer').appendChild(iframe);
-
-      tabs.push({ tabButton, iframe });
-      switchTab(tabIndex);
+    function maximizeWindow(btn) {
+      const win = btn.closest('.window');
+      win.style.top = '0px';
+      win.style.left = '0px';
+      win.style.width = '100vw';
+      win.style.height = 'calc(100vh - 40px)';
+      win.style.zIndex = ++topZ;
     }
 
-    function switchTab(index) {
-      if (index === activeTabIndex) return;
-
-      // 非表示処理
-      if (activeTabIndex !== -1) {
-        tabs[activeTabIndex].iframe.style.display = 'none';
-        tabs[activeTabIndex].tabButton.classList.remove('active');
-      }
-
-      // 表示切り替え
-      tabs[index].iframe.style.display = 'block';
-      tabs[index].tabButton.classList.add('active');
-      activeTabIndex = index;
-
-      document.getElementById('searchBox').value = tabs[index].iframe.src;
+    function enableDrag(win) {
+      const bar = win.querySelector('.title-bar');
+      bar.addEventListener('mousedown', e => {
+        dragTarget = win;
+        offsetX = e.clientX - win.offsetLeft;
+        offsetY = e.clientY - win.offsetTop;
+        win.style.zIndex = ++topZ;
+      });
     }
 
-    // 検索・URL入力
-    document.getElementById('searchBox').addEventListener('keydown', e => {
-      if (e.key === 'Enter' && activeTabIndex !== -1) {
-        const input = e.target.value;
-        const isURL = input.startsWith('http') || input.includes('.');
-        const query = isURL ? input : `https://www.bing.com/search?q=${encodeURIComponent(input)}`;
-        tabs[activeTabIndex].iframe.src = query;
+    let dragTarget = null, offsetX = 0, offsetY = 0;
+    document.addEventListener('mousemove', e => {
+      if (dragTarget) {
+        dragTarget.style.left = (e.clientX - offsetX) + 'px';
+        dragTarget.style.top = Math.max(e.clientY - offsetY, 0) + 'px';
       }
     });
+    document.addEventListener('mouseup', () => dragTarget = null);
 
-    // 初期タブ
-    addTab();
+    function openSetting() {
+      openWindow('Apps/setting.html', '設定');
+    }
+
+    function searchDuck(inputElem) {
+      const query = inputElem.value;
+      if (!query) return;
+      inputElem.value = '';
+      openWindow('https://duckduckgo.com/?q=' + encodeURIComponent(query), 'DuckDuckGo');
+    }
   </script>
 </body>
 </html>
