@@ -1,61 +1,128 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8" />
-  <title>Vortex - Search</title>
+  <meta charset="UTF-8">
+  <title>Vortex Browser</title>
   <style>
     body {
       margin: 0;
-      font-family: sans-serif;
       background: #1e1b2f;
       color: #eee;
+      font-family: sans-serif;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
     }
     header {
       background: #5a1ea1;
-      padding: 10px;
+      padding: 8px;
       display: flex;
-      align-items: center;
+      gap: 8px;
     }
     input {
       flex: 1;
-      padding: 8px;
-      border: none;
+      padding: 6px;
       border-radius: 4px;
+      border: none;
       font-size: 16px;
     }
-    iframe {
-      width: 100%;
-      height: calc(100vh - 50px);
+    button {
+      background: #7e42e1;
       border: none;
+      padding: 6px 10px;
+      color: white;
+      font-weight: bold;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    #tabs {
+      background: #2a223f;
+      display: flex;
+      overflow-x: auto;
+    }
+    #tabs div {
+      padding: 6px 12px;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      color: #ccc;
+    }
+    #tabs .active {
+      background: #3b2a5f;
+      border-bottom: 2px solid #ae82ff;
+      color: white;
+    }
+    iframe {
+      flex: 1;
+      border: none;
+      width: 100%;
     }
   </style>
 </head>
 <body>
   <header>
-    <input type="text" id="searchBox" placeholder="Bing検索..." />
+    <input type="text" id="searchBox" placeholder="Bing検索 or URLを入力..." />
+    <button onclick="addTab()">＋</button>
   </header>
-  <iframe id="searchFrame" src=""></iframe>
+  <div id="tabs"></div>
+  <div id="viewContainer"></div>
 
   <script>
-    const params = new URLSearchParams(location.search);
-    const q = params.get('q');
-    const input = document.getElementById('searchBox');
-    const iframe = document.getElementById('searchFrame');
+    const tabs = [];
+    let activeTabIndex = -1;
 
-    function doSearch(query) {
-      iframe.src = 'https://www.bing.com/search?q=' + encodeURIComponent(query);
+    function createIframe(url) {
+      const iframe = document.createElement('iframe');
+      iframe.src = url;
+      return iframe;
     }
 
-    if (q) {
-      input.value = q;
-      doSearch(q);
+    function addTab(url = 'https://www.bing.com/') {
+      const tabIndex = tabs.length;
+
+      // タブボタン
+      const tabButton = document.createElement('div');
+      tabButton.textContent = `タブ${tabIndex + 1}`;
+      tabButton.onclick = () => switchTab(tabIndex);
+      document.getElementById('tabs').appendChild(tabButton);
+
+      // iframeビュー
+      const iframe = createIframe(url);
+      iframe.style.display = 'none';
+      document.getElementById('viewContainer').appendChild(iframe);
+
+      tabs.push({ tabButton, iframe });
+      switchTab(tabIndex);
     }
 
-    input.addEventListener('keydown', e => {
-      if (e.key === 'Enter') {
-        doSearch(input.value);
+    function switchTab(index) {
+      if (index === activeTabIndex) return;
+
+      // 非表示処理
+      if (activeTabIndex !== -1) {
+        tabs[activeTabIndex].iframe.style.display = 'none';
+        tabs[activeTabIndex].tabButton.classList.remove('active');
+      }
+
+      // 表示切り替え
+      tabs[index].iframe.style.display = 'block';
+      tabs[index].tabButton.classList.add('active');
+      activeTabIndex = index;
+
+      document.getElementById('searchBox').value = tabs[index].iframe.src;
+    }
+
+    // 検索・URL入力
+    document.getElementById('searchBox').addEventListener('keydown', e => {
+      if (e.key === 'Enter' && activeTabIndex !== -1) {
+        const input = e.target.value;
+        const isURL = input.startsWith('http') || input.includes('.');
+        const query = isURL ? input : `https://www.bing.com/search?q=${encodeURIComponent(input)}`;
+        tabs[activeTabIndex].iframe.src = query;
       }
     });
+
+    // 初期タブ
+    addTab();
   </script>
 </body>
 </html>
