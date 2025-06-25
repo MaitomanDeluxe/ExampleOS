@@ -131,7 +131,7 @@
     #fileButton:hover {
       background: #666;
     }
-    #googleSearch {
+    #bingSearch {
       background: #000;
       color: white;
       border: 1px solid #666;
@@ -144,7 +144,7 @@
 <body id="body" style="background-image: url('Images/back1.png'); background-size: cover;">
   <div class="taskbar" id="taskbar">
     <div class="left">
-      <input type="text" id="googleSearch" placeholder="Google検索" onkeydown="if(event.key==='Enter'){searchGoogle(this.value)}">
+      <input type="text" id="bingSearch" placeholder="Bing検索" onkeydown="if(event.key==='Enter'){searchBing(this)}">
     </div>
     <div class="center">
       <button onclick="openSetting()">設定</button>
@@ -192,14 +192,6 @@
       `;
       document.body.appendChild(win);
       enableDrag(win);
-    }
-
-    function searchGoogle(query) {
-      if (!query) return;
-      const html = `<!DOCTYPE html><html lang='ja'><head><meta charset='UTF-8'><title>検索結果</title></head><body><iframe src='https://www.google.com/search?q=${encodeURIComponent(query)}' width='100%' height='100%' style='border:none;'></iframe></body></html>`;
-      const blob = new Blob([html], { type: 'text/html' });
-      const url = URL.createObjectURL(blob);
-      openWindow(url, 'Google検索');
     }
 
     function maximizeWindow(btn) {
@@ -262,6 +254,13 @@
 
     function openSetting() {
       openWindow('Apps/setting.html', '設定');
+    }
+
+    function searchBing(inputElem) {
+      const query = inputElem.value;
+      if (!query) return;
+      inputElem.value = '';
+      openWindow('https://www.bing.com/search?q=' + encodeURIComponent(query), 'Bing検索');
     }
   </script>
 </body>
